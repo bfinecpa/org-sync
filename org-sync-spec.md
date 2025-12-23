@@ -12,6 +12,13 @@
 * 저장 범위: 하위 서버는 **필요 도메인/필드/레코드만 저장**
 * 이벤트: 하위 서버 내부로 **도메인 생성/수정/삭제 + 필드 변경 이벤트** 발행 가능
 
+### RabbitMQ 연동 (회사 변경 이벤트)
+
+* 기본 큐 이름: `orgsync.company.changed` (환경변수/설정 `orgsync.amqp.company-change-queue`로 변경 가능)
+* 메시지 페이로드(JSON): `{ "companyId": "<회사 ID>" }`
+* 소비 로직: 큐 수신 시 해당 `companyId`로 `SyncEngine.synchronizeCompany` 호출
+* 메시지 컨버터: `Jackson2JsonMessageConverter`
+
 ---
 
 ## 1. 범위 / 비범위
