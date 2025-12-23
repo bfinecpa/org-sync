@@ -5,9 +5,9 @@ import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.jdbc.JdbcApplier;
 import org.orgsync.core.lock.LockManager;
+import org.orgsync.core.spec.OrgSyncSpec;
 import org.orgsync.core.spec.SpecValidator;
 import org.orgsync.core.spec.YamlSpecLoader;
-import org.orgsync.core.spec.YamlSyncSpec;
 import org.orgsync.core.state.SyncStateRepository;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -28,9 +28,14 @@ public class OrgSyncConfiguration {
     }
 
     @Bean
-    public YamlSyncSpec yamlSyncSpec() {
+    public YamlSpecLoader yamlSpecLoader() {
+        return new YamlSpecLoader();
+    }
+
+    @Bean
+    public OrgSyncSpec orgSyncSpec(YamlSpecLoader loader) {
         // TODO: externalize specification path to configuration
-        return new YamlSpecLoader().load(Path.of("org-sync.yaml"));
+        return OrgSyncSpec.fromYaml(loader.load(Path.of("org-sync.yaml")));
     }
 
     @Bean
@@ -39,8 +44,8 @@ public class OrgSyncConfiguration {
     }
 
     @Bean
-    public JdbcApplier jdbcApplier(DataSource dataSource, YamlSyncSpec yamlSyncSpec) {
-        return new JdbcApplier(dataSource, yamlSyncSpec);
+    public JdbcApplier jdbcApplier(DataSource dataSource, OrgSyncSpec orgSyncSpec) {
+        return new JdbcApplier(dataSource, orgSyncSpec);
     }
 
     @Bean

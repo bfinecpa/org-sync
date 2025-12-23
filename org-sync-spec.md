@@ -34,8 +34,8 @@
 
 2. 저장 선택(프로젝션)
 
-* YAML 기반 도메인/필드 선택
-* YAML 기반 테이블/컬럼 매핑
+* YAML 또는 코드 DSL 기반 도메인/필드 선택
+* YAML 또는 DSL 기반 테이블/컬럼 매핑
 * (옵션) 레코드 필터링(조건 저장)
 
 3. 실행 시 검증
@@ -93,7 +93,7 @@
 각 도메인은 “기본 키(식별자)”를 갖는다. (예: userUuid, deptUuid 등)
 3.1 도메인별 “저장 가능한 필드 카탈로그” (원천 스키마 → 하위 서버 프로젝션)
 
-목표: 조직도 서버가 제공할 수 있는 “표준 필드(캐노니컬)”를 정의하고, 하위 서버는 YAML로 필요한 필드만 저장한다.
+목표: 조직도 서버가 제공할 수 있는 “표준 필드(캐노니컬)”를 정의하고, 하위 서버는 YAML 또는 코드 DSL로 필요한 필드만 저장한다.
 
 3.1.1 공통 필드(모든 도메인 권장)
 필드	의미	권장 타입(Postgres)	비고
@@ -104,7 +104,7 @@ updatedAt	최종 수정 시각	timestamptz	델타/스냅샷 공통
 
 3.1.2 도메인별 표준 필드 (캐노니컬)
 
-아래 필드들은 “조직도 서버가 제공 가능한 최대치”를 정의한 것이고, 하위 서버 저장 여부는 YAML로 선택한다.
+아래 필드들은 “조직도 서버가 제공 가능한 최대치”를 정의한 것이고, 하위 서버 저장 여부는 YAML/DSL로 선택한다.
 
 (A) USER (사용자)
 
@@ -222,7 +222,7 @@ memberCompanyIds : text 또는 별도 매핑 테이블 권장
 1. `orgsync-core`
 
 * Spring/Boot 의존 없음
-* 동기화 엔진, YAML 파서/검증기, JDBC 적용기, 커서 저장 인터페이스, 이벤트 인터페이스(SPI)
+* 동기화 엔진, 스펙 빌더/YAML 파서/검증기, JDBC 적용기, 커서 저장 인터페이스, 이벤트 인터페이스(SPI)
 
 2. `orgsync-spring`
 
@@ -356,7 +356,7 @@ memberCompanyIds : text 또는 별도 매핑 테이블 권장
 
 ---
 
-## 8. “필요 데이터만 저장” 명세 (YAML 스펙)
+## 8. “필요 데이터만 저장” 명세 (YAML/DSL)
 
 ### 8.1 YAML 목표
 
@@ -370,7 +370,41 @@ memberCompanyIds : text 또는 별도 매핑 테이블 권장
 * (옵션) 레코드 필터 정책
 * (옵션) 이벤트 발행 범위
 
-### 8.2 YAML 예시(초안)
+### 8.2 Java Builder DSL 예시
+
+`OrgSyncSpec` 빌더 DSL을 사용하면 YAML 없이 코드만으로 프로젝션을 정의할 수 있다.
+
+```java
+import static org.orgsync.core.spec.OrgSyncSpec.orgsyncSpec;
+import static org.orgsync.core.spec.RecordFilters.prefix;
+import static org.orgsync.core.spec.SqlColumnType.*;
+
+@Bean
+OrgSyncSpec orgSyncSpec() {
+  return orgsyncSpec(spec -> {
+    spec.state(s -> s.table("sync_state").companyIdColumn("company_id").cursorColumn("last_cursor"));
+    spec.validateSchemaOnStartup(true);
+
+    spec.domain("USER", d -> {
+      d.enabled(true);
+      d.table("app_user");
+      d.pk("user_uuid");
+      d.writeMode(WriteMode.UPSERT);
+      d.deleteMode(DeleteMode.HARD_DELETE);
+      d.map("userUuid", "user_uuid", VARCHAR, 64, false);
+      d.map("name", "user_name", VARCHAR, 256, false);
+      d.map("orgCode", "org_code", VARCHAR, 128, true);
+      d.map("updatedAt", "updated_at", TIMESTAMPTZ, null, false);
+      d.filter(prefix("orgCode", "SALES-"));
+      d.emit(e -> e.entityEvents(true).fieldEvents("name", "orgCode"));
+    });
+
+    spec.domain("DEPT", d -> d.enabled(false));
+  });
+}
+```
+
+### 8.3 YAML 예시(초안)
 
 ```yaml
 orgsync:
@@ -404,7 +438,7 @@ orgsync:
       enabled: false
 ```
 
-### 8.3 스키마 검증 규칙
+### 8.4 스키마 검증 규칙
 
 `validateSchemaOnStartup=true`일 때:
 
