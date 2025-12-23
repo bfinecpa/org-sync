@@ -8,7 +8,9 @@ group = 'org.orgsync'
 version = '0.1.0-SNAPSHOT'
 
 subprojects {
-    apply plugin: 'java'
+    // Use the Java Library plugin so "api" configurations are available for modules
+    // that need to expose dependencies to their consumers.
+    apply plugin: 'java-library'
 
     group = rootProject.group
     version = rootProject.version
