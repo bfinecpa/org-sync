@@ -19,6 +19,11 @@
 * 소비 로직: 큐 수신 시 해당 `companyId`로 `SyncEngine.synchronizeCompany` 호출
 * 메시지 컨버터: `Jackson2JsonMessageConverter`
 
+### 에러 메시지 정책
+
+* 라이브러리에서 던지는 예외 메시지는 `[org-sync]` 접두사를 포함해 로그에서 출처를 명확히 한다.
+* 동일한 접두사를 모든 모듈에서 사용해 운영자가 장애 원인을 빠르게 식별할 수 있도록 한다.
+
 ---
 
 ## 1. 범위 / 비범위

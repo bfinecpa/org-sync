@@ -1,5 +1,7 @@
 package org.orgsync.core.spec;
 
+import static org.orgsync.core.Constants.ERROR_PREFIX;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -16,7 +18,7 @@ public class YamlSpecLoader {
             // TODO: wire a YAML parser such as SnakeYAML to populate the spec
             return new YamlSyncSpec(Map.of());
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to load sync spec from " + path, e);
+            throw new IllegalStateException(ERROR_PREFIX + "Failed to load sync spec from " + path, e);
         }
     }
 }
