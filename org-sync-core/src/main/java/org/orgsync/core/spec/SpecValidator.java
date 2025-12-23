@@ -1,5 +1,7 @@
 package org.orgsync.core.spec;
 
+import static org.orgsync.core.Constants.ERROR_PREFIX;
+
 import java.util.Map;
 
 /**
@@ -9,7 +11,7 @@ public class SpecValidator {
 
     public void validate(YamlSyncSpec spec) {
         if (spec.getDomains().isEmpty()) {
-            throw new IllegalArgumentException("At least one domain mapping must be provided");
+            throw new IllegalArgumentException(ERROR_PREFIX + "At least one domain mapping must be provided");
         }
         for (Map.Entry<String, YamlSyncSpec.DomainProjection> entry : spec.getDomains().entrySet()) {
             validateDomain(entry.getKey(), entry.getValue());
@@ -18,7 +20,7 @@ public class SpecValidator {
 
     public void validate(OrgSyncSpec spec) {
         if (spec.domains().isEmpty()) {
-            throw new IllegalArgumentException("At least one domain mapping must be provided");
+            throw new IllegalArgumentException(ERROR_PREFIX + "At least one domain mapping must be provided");
         }
         for (Map.Entry<String, DomainSpec> entry : spec.domains().entrySet()) {
             validateDomain(entry.getKey(), entry.getValue());
@@ -27,10 +29,10 @@ public class SpecValidator {
 
     private void validateDomain(String domain, YamlSyncSpec.DomainProjection projection) {
         if (projection.table() == null || projection.table().isBlank()) {
-            throw new IllegalArgumentException("Domain " + domain + " requires a target table");
+            throw new IllegalArgumentException(ERROR_PREFIX + "Domain " + domain + " requires a target table");
         }
         if (projection.fields() == null || projection.fields().isEmpty()) {
-            throw new IllegalArgumentException("Domain " + domain + " requires at least one field mapping");
+            throw new IllegalArgumentException(ERROR_PREFIX + "Domain " + domain + " requires at least one field mapping");
         }
     }
 
@@ -39,10 +41,10 @@ public class SpecValidator {
             return;
         }
         if (domainSpec.table() == null || domainSpec.table().isBlank()) {
-            throw new IllegalArgumentException("Domain " + domain + " requires a target table");
+            throw new IllegalArgumentException(ERROR_PREFIX + "Domain " + domain + " requires a target table");
         }
         if (domainSpec.fieldMappings() == null || domainSpec.fieldMappings().isEmpty()) {
-            throw new IllegalArgumentException("Domain " + domain + " requires at least one field mapping");
+            throw new IllegalArgumentException(ERROR_PREFIX + "Domain " + domain + " requires at least one field mapping");
         }
     }
 }
