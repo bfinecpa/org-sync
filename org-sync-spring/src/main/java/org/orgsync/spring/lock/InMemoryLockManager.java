@@ -1,6 +1,6 @@
-package org.orgsync.spring;
+package org.orgsync.spring.lock;
 
-import org.orgsync.core.LockManager;
+import org.orgsync.core.lock.LockManager;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

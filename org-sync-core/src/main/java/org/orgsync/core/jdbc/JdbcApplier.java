@@ -1,4 +1,7 @@
-package org.orgsync.core;
+package org.orgsync.core.jdbc;
+
+import org.orgsync.core.engine.SyncResponse;
+import org.orgsync.core.spec.YamlSyncSpec;
 
 import javax.sql.DataSource;
 import java.util.Objects;

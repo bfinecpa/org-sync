@@ -1,16 +1,16 @@
 package org.orgsync.boot;
 
-import org.orgsync.core.DomainEventPublisher;
-import org.orgsync.core.JdbcApplier;
-import org.orgsync.core.LockManager;
-import org.orgsync.core.OrgChartClient;
-import org.orgsync.core.SpecValidator;
-import org.orgsync.core.SyncEngine;
-import org.orgsync.core.SyncStateRepository;
-import org.orgsync.core.YamlSyncSpec;
-import org.orgsync.spring.InMemoryLockManager;
-import org.orgsync.spring.OrgSyncConfiguration;
-import org.orgsync.spring.SpringDomainEventPublisher;
+import org.orgsync.core.client.OrgChartClient;
+import org.orgsync.core.engine.SyncEngine;
+import org.orgsync.core.event.DomainEventPublisher;
+import org.orgsync.core.jdbc.JdbcApplier;
+import org.orgsync.core.lock.LockManager;
+import org.orgsync.core.spec.SpecValidator;
+import org.orgsync.core.spec.YamlSyncSpec;
+import org.orgsync.core.state.SyncStateRepository;
+import org.orgsync.spring.config.OrgSyncConfiguration;
+import org.orgsync.spring.event.SpringDomainEventPublisher;
+import org.orgsync.spring.lock.InMemoryLockManager;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

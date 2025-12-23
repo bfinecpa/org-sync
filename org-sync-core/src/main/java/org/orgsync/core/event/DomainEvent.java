@@ -1,4 +1,4 @@
-package org.orgsync.core;
+package org.orgsync.core.event;
 
 import java.util.Map;
 import java.util.Objects;

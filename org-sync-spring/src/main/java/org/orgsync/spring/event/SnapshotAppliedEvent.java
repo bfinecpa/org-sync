@@ -1,4 +1,4 @@
-package org.orgsync.spring;
+package org.orgsync.spring.event;
 
 import java.util.List;
 

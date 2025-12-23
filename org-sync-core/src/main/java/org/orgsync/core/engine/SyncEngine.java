@@ -1,4 +1,10 @@
-package org.orgsync.core;
+package org.orgsync.core.engine;
+
+import org.orgsync.core.client.OrgChartClient;
+import org.orgsync.core.event.DomainEventPublisher;
+import org.orgsync.core.jdbc.JdbcApplier;
+import org.orgsync.core.lock.LockManager;
+import org.orgsync.core.state.SyncStateRepository;
 
 import java.util.Objects;
 import java.util.Optional;
