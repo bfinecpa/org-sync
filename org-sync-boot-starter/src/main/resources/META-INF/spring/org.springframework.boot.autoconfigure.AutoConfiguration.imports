@@ -1,1 +1,2 @@
 org.orgsync.boot.OrgSyncAutoConfiguration
+org.orgsync.boot.OrgSyncAmqpAutoConfiguration
