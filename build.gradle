@@ -1,0 +1,63 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.5' apply false
+    id 'io.spring.dependency-management' version '1.1.4' apply false
+}
+
+group = 'org.orgsync'
+version = '0.1.0-SNAPSHOT'
+
+subprojects {
+    apply plugin: 'java'
+
+    group = rootProject.group
+    version = rootProject.version
+
+    repositories {
+        mavenCentral()
+    }
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+}
+
+project(':org-sync-spring') {
+    dependencies {
+        api project(':org-sync-core')
+        implementation 'org.springframework:spring-context:6.1.6'
+    }
+}
+
+project(':org-sync-boot-starter') {
+    apply plugin: 'io.spring.dependency-management'
+
+    dependencies {
+        api project(':org-sync-spring')
+        implementation 'org.springframework.boot:spring-boot-autoconfigure:3.2.5'
+    }
+}
+
+project(':org-sync-boot-sample') {
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    dependencies {
+        implementation project(':org-sync-boot-starter')
+        implementation 'org.springframework.boot:spring-boot-starter:3.2.5'
+        implementation 'org.apache.commons:commons-dbcp2:2.12.0'
+    }
+}
+
+project(':org-sync-spring-sample') {
+    dependencies {
+        implementation project(':org-sync-spring')
+        implementation 'org.springframework:spring-context:6.1.6'
+        implementation 'org.apache.commons:commons-dbcp2:2.12.0'
+    }
+}
