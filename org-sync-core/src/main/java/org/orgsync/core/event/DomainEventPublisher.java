@@ -1,4 +1,4 @@
-package org.orgsync.core;
+package org.orgsync.core.event;
 
 /**
  * Publishes synchronization domain events to the hosting application.

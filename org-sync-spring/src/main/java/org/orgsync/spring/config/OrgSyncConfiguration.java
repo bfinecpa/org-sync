@@ -1,14 +1,15 @@
-package org.orgsync.spring;
+package org.orgsync.spring.config;
 
-import org.orgsync.core.DomainEventPublisher;
-import org.orgsync.core.JdbcApplier;
-import org.orgsync.core.LockManager;
-import org.orgsync.core.OrgChartClient;
-import org.orgsync.core.SpecValidator;
-import org.orgsync.core.SyncEngine;
-import org.orgsync.core.SyncStateRepository;
-import org.orgsync.core.YamlSpecLoader;
-import org.orgsync.core.YamlSyncSpec;
+import org.orgsync.core.client.OrgChartClient;
+import org.orgsync.core.engine.SyncEngine;
+import org.orgsync.core.event.DomainEventPublisher;
+import org.orgsync.core.jdbc.JdbcApplier;
+import org.orgsync.core.lock.LockManager;
+import org.orgsync.core.spec.SpecValidator;
+import org.orgsync.core.spec.YamlSpecLoader;
+import org.orgsync.core.spec.YamlSyncSpec;
+import org.orgsync.core.state.SyncStateRepository;
+import org.orgsync.spring.event.SpringDomainEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

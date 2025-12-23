@@ -1,4 +1,4 @@
-package org.orgsync.core;
+package org.orgsync.core.spec;
 
 import java.util.Map;
 

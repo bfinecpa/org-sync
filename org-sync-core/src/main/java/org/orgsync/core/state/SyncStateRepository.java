@@ -1,4 +1,4 @@
-package org.orgsync.core;
+package org.orgsync.core.state;
 
 import java.util.Optional;
 

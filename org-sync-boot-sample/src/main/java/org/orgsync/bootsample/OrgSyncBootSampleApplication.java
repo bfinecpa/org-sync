@@ -1,12 +1,12 @@
 package org.orgsync.bootsample;
 
-import org.orgsync.core.DomainEvent;
-import org.orgsync.core.DomainEventPublisher;
-import org.orgsync.core.OrgChartClient;
-import org.orgsync.core.SyncEngine;
-import org.orgsync.core.SyncResponse;
-import org.orgsync.core.SyncStateRepository;
-import org.orgsync.core.YamlSyncSpec;
+import org.orgsync.core.client.OrgChartClient;
+import org.orgsync.core.engine.SyncEngine;
+import org.orgsync.core.engine.SyncResponse;
+import org.orgsync.core.event.DomainEvent;
+import org.orgsync.core.event.DomainEventPublisher;
+import org.orgsync.core.state.SyncStateRepository;
+import org.orgsync.core.spec.YamlSyncSpec;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

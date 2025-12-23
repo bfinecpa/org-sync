@@ -1,4 +1,4 @@
-package org.orgsync.core;
+package org.orgsync.core.lock;
 
 /**
  * Coordinates company-level locking to ensure idempotent processing.

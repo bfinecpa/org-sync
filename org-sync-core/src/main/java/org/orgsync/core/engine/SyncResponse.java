@@ -1,4 +1,6 @@
-package org.orgsync.core;
+package org.orgsync.core.engine;
+
+import org.orgsync.core.event.DomainEvent;
 
 import java.util.Collections;
 import java.util.List;

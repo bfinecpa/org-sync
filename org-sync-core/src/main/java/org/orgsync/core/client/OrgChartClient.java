@@ -1,4 +1,6 @@
-package org.orgsync.core;
+package org.orgsync.core.client;
+
+import org.orgsync.core.engine.SyncResponse;
 
 /**
  * Fetches snapshot or delta data from the upstream org chart server.

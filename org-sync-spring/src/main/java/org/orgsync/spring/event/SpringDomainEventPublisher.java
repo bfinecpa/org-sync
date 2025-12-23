@@ -1,7 +1,7 @@
-package org.orgsync.spring;
+package org.orgsync.spring.event;
 
-import org.orgsync.core.DomainEvent;
-import org.orgsync.core.DomainEventPublisher;
+import org.orgsync.core.event.DomainEvent;
+import org.orgsync.core.event.DomainEventPublisher;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.Objects;
