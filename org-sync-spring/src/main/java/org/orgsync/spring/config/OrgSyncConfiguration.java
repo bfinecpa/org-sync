@@ -9,7 +9,9 @@ import org.orgsync.core.spec.OrgSyncSpec;
 import org.orgsync.core.spec.SpecValidator;
 import org.orgsync.core.spec.YamlSpecLoader;
 import org.orgsync.core.state.LogSeqRepository;
+import org.orgsync.spring.client.DefaultOrgChartClient;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -25,6 +27,12 @@ public class OrgSyncConfiguration {
     @Bean
     public DomainEventPublisher domainEventPublisher(org.springframework.context.ApplicationEventPublisher publisher) {
         return new SpringDomainEventPublisher(publisher);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public OrgChartClient defaultOrgChartClient() {
+        return new DefaultOrgChartClient();
     }
 
     @Bean
