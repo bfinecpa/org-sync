@@ -353,6 +353,12 @@ memberCompanyIds : text 또는 별도 매핑 테이블 권장
 * `UPDATE sync_state SET last_cursor=? WHERE company_id=? AND last_cursor=?`
 * 영향 row=0이면 커서 경합 → 중단/재시작
 
+DB 락용 테이블/컬럼은 설정으로 바꿀 수 있다.
+
+* 기본: `SELECT uuid FROM company WHERE uuid=:companyUuid FOR UPDATE`
+* 변경: `orgsync.lock.company.table`, `orgsync.lock.company.uuid-column`
+  * ex) `orgsync.lock.company.table=tenant_company`, `orgsync.lock.company.uuid-column=company_uuid`
+
 ### 7.3 Redis 분산락(옵션)
 
 * 목적: “중복 pull”을 줄이기 위한 single-flight 최적화
