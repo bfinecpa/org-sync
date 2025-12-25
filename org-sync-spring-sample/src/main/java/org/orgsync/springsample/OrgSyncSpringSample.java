@@ -3,10 +3,9 @@ package org.orgsync.springsample;
 import org.orgsync.core.client.OrgChartClient;
 import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.engine.SyncResponse;
-import org.orgsync.core.event.DomainEvent;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.lock.LockManager;
-import org.orgsync.core.state.SyncStateRepository;
+import org.orgsync.core.state.LogSeqRepository;
 import org.orgsync.core.spec.YamlSyncSpec;
 import org.orgsync.spring.config.OrgSyncConfiguration;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
@@ -35,22 +34,22 @@ public class OrgSyncSpringSample {
 
         @Bean
         public OrgChartClient orgChartClient() {
-            return (companyId, sinceCursor) -> new SyncResponse(false, "cursor-1", Set.of("user"), Collections.emptyList());
+            return (companyId, sinceCursor) -> new SyncResponse(false, -1L, Set.of("user"), Collections.emptyList());
         }
 
         @Bean
-        public SyncStateRepository syncStateRepository() {
-            return new SyncStateRepository() {
-                private String cursor;
+        public LogSeqRepository syncLogSeqRepository() {
+            return new LogSeqRepository() {
+                private Long logSeq;
 
                 @Override
-                public Optional<String> loadCursor(String companyId) {
-                    return Optional.ofNullable(cursor);
+                public Optional<Long> loadLogSeq(String companyUuid) {
+                    return Optional.ofNullable(logSeq);
                 }
 
                 @Override
-                public void saveCursor(String companyId, String nextCursor) {
-                    this.cursor = nextCursor;
+                public void saveCursor(String companyUuid, Long nextCursor) {
+                    this.logSeq = nextCursor;
                 }
             };
         }

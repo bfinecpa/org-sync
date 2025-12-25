@@ -8,7 +8,7 @@ import org.orgsync.core.lock.LockManager;
 import org.orgsync.core.spec.OrgSyncSpec;
 import org.orgsync.core.spec.SpecValidator;
 import org.orgsync.core.spec.YamlSpecLoader;
-import org.orgsync.core.state.SyncStateRepository;
+import org.orgsync.core.state.LogSeqRepository;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,10 +50,10 @@ public class OrgSyncConfiguration {
 
     @Bean
     public SyncEngine syncEngine(OrgChartClient client,
-                                 SyncStateRepository stateRepository,
+                                 LogSeqRepository logSeqRepository,
                                  JdbcApplier jdbcApplier,
                                  DomainEventPublisher eventPublisher,
                                  LockManager lockManager) {
-        return new SyncEngine(client, stateRepository, jdbcApplier, eventPublisher, lockManager);
+        return new SyncEngine(client, logSeqRepository, jdbcApplier, eventPublisher, lockManager);
     }
 }

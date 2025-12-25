@@ -12,13 +12,13 @@ import java.util.Set;
 public class SyncResponse {
 
     private final boolean needSnapshot;
-    private final String nextCursor;
+    private final Long logSeq;
     private final Set<String> processedDomains;
     private final List<DomainEvent> events;
 
-    public SyncResponse(boolean needSnapshot, String nextCursor, Set<String> processedDomains, List<DomainEvent> events) {
+    public SyncResponse(boolean needSnapshot, Long logSeq, Set<String> processedDomains, List<DomainEvent> events) {
         this.needSnapshot = needSnapshot;
-        this.nextCursor = nextCursor;
+        this.logSeq = logSeq;
         this.processedDomains = processedDomains == null ? Collections.emptySet() : Collections.unmodifiableSet(processedDomains);
         this.events = events == null ? Collections.emptyList() : Collections.unmodifiableList(events);
     }
@@ -27,8 +27,8 @@ public class SyncResponse {
         return needSnapshot;
     }
 
-    public String nextCursor() {
-        return nextCursor;
+    public Long nextCursor() {
+        return logSeq;
     }
 
     public Set<String> processedDomains() {

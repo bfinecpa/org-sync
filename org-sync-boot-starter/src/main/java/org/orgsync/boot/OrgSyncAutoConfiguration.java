@@ -9,7 +9,7 @@ import org.orgsync.core.lock.LockManager;
 import org.orgsync.core.spec.OrgSyncSpec;
 import org.orgsync.core.spec.SpecValidator;
 import org.orgsync.core.spec.YamlSpecLoader;
-import org.orgsync.core.state.SyncStateRepository;
+import org.orgsync.core.state.LogSeqRepository;
 import org.orgsync.spring.config.OrgSyncConfiguration;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
 import org.orgsync.spring.lock.InMemoryLockManager;
@@ -18,7 +18,6 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -90,10 +89,10 @@ public class OrgSyncAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public SyncEngine syncEngine(OrgChartClient client,
-                                 SyncStateRepository stateRepository,
+                                 LogSeqRepository logSeqRepository,
                                  JdbcApplier jdbcApplier,
                                  DomainEventPublisher eventPublisher,
                                  LockManager lockManager) {
-        return new SyncEngine(client, stateRepository, jdbcApplier, eventPublisher, lockManager);
+        return new SyncEngine(client, logSeqRepository, jdbcApplier, eventPublisher, lockManager);
     }
 }
