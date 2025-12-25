@@ -33,6 +33,7 @@ project(':org-sync-spring') {
     dependencies {
         api project(':org-sync-core')
         implementation 'org.springframework:spring-context:6.1.6'
+        implementation 'org.springframework:spring-jdbc:6.1.6'
         implementation 'org.springframework.amqp:spring-rabbit:3.1.6'
         implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.4'
     }
@@ -43,6 +44,7 @@ project(':org-sync-boot-starter') {
 
     dependencies {
         api project(':org-sync-spring')
+        implementation 'org.springframework:spring-jdbc:6.1.6'
         implementation 'org.springframework.boot:spring-boot-autoconfigure:3.2.5'
         implementation 'org.springframework.boot:spring-boot-starter-amqp:3.2.5'
     }
