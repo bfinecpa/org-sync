@@ -1,6 +1,7 @@
 package org.orgsync.spring.lock;
 
 import org.orgsync.core.lock.LockManager;
+
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -41,6 +42,7 @@ public class JdbcLockManager implements LockManager {
         transactionTemplate.executeWithoutResult(status -> {
             boolean locked = jdbcTemplate.query(lockSql, Map.of("companyUuid", companyUuid),
                     (ResultSetExtractor<Boolean>) (rs) -> rs.next());
+
             if (!locked) {
                 throw new IllegalStateException("No company row found for uuid=" + companyUuid);
             }
