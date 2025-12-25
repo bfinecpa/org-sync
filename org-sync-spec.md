@@ -564,7 +564,7 @@ YAML로 커버하기 어려운 서비스별 로직을 코드로 플러그인 할
 
 * `SyncEngine`
 * `OrgChartClient` (HTTP)
-* `SyncStateRepository` (JDBC)
+* `SyncLogSeqRepository` (JDBC)
 * `JdbcApplier`
 * `YamlSpecLoader` + `SpecValidator`
 * `DomainEventPublisher`(인터페이스) + Spring 구현

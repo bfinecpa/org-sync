@@ -89,10 +89,10 @@ public class OrgSyncAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public SyncEngine syncEngine(OrgChartClient client,
-                                 LogSeqRepository stateRepository,
+                                 LogSeqRepository logSeqRepository,
                                  JdbcApplier jdbcApplier,
                                  DomainEventPublisher eventPublisher,
                                  LockManager lockManager) {
-        return new SyncEngine(client, stateRepository, jdbcApplier, eventPublisher, lockManager);
+        return new SyncEngine(client, logSeqRepository, jdbcApplier, eventPublisher, lockManager);
     }
 }

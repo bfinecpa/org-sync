@@ -7,7 +7,6 @@ import org.orgsync.core.lock.LockManager;
 import org.orgsync.core.state.LogSeqRepository;
 
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Coordinates synchronization by pulling data from the org chart server and applying it
@@ -16,18 +15,18 @@ import java.util.Optional;
 public class SyncEngine {
 
     private final OrgChartClient client;
-    private final LogSeqRepository stateRepository;
+    private final LogSeqRepository logSeqRepository;
     private final JdbcApplier jdbcApplier;
     private final DomainEventPublisher eventPublisher;
     private final LockManager lockManager;
 
     public SyncEngine(OrgChartClient client,
-                      LogSeqRepository stateRepository,
+                      LogSeqRepository logSeqRepository,
                       JdbcApplier jdbcApplier,
                       DomainEventPublisher eventPublisher,
                       LockManager lockManager) {
         this.client = Objects.requireNonNull(client, "client");
-        this.stateRepository = Objects.requireNonNull(stateRepository, "stateRepository");
+        this.logSeqRepository = Objects.requireNonNull(logSeqRepository, "logSeqRepository");
         this.jdbcApplier = Objects.requireNonNull(jdbcApplier, "jdbcApplier");
         this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher");
         this.lockManager = Objects.requireNonNull(lockManager, "lockManager");
@@ -38,7 +37,7 @@ public class SyncEngine {
     }
 
     private void doSynchronize(String companyUuid, Long newLogSeq) {
-        Long existedLogSeq = stateRepository.loadLogSeq(companyUuid).orElse(-1L);
+        Long existedLogSeq = logSeqRepository.loadLogSeq(companyUuid).orElse(-1L);
         if (newLogSeq <= existedLogSeq) {
             return;
         }
@@ -48,7 +47,7 @@ public class SyncEngine {
         } else {
             applyDelta(companyUuid, response);
         }
-        stateRepository.saveCursor(companyUuid, response.nextCursor());
+        logSeqRepository.saveCursor(companyUuid, response.nextCursor());
     }
 
     private void applySnapshot(String companyId, SyncResponse response) {

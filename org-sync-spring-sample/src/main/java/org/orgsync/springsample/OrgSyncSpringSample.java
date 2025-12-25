@@ -38,7 +38,7 @@ public class OrgSyncSpringSample {
         }
 
         @Bean
-        public LogSeqRepository syncStateRepository() {
+        public LogSeqRepository syncLogSeqRepository() {
             return new LogSeqRepository() {
                 private Long logSeq;
 
