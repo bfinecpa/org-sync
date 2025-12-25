@@ -26,10 +26,10 @@ public class JdbcLockManager implements LockManager {
         this.transactionTemplate = Objects.requireNonNull(transactionTemplate, "transactionTemplate");
         this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
         if (companyTableName == null || companyTableName.isBlank()) {
-            throw new IllegalArgumentException("companyTableName must not be blank");
+            throw new IllegalArgumentException("[org-sync] companyTableName must not be blank");
         }
         if (companyUuidColumn == null || companyUuidColumn.isBlank()) {
-            throw new IllegalArgumentException("companyUuidColumn must not be blank");
+            throw new IllegalArgumentException("[org-sync] companyUuidColumn must not be blank");
         }
         this.lockSql = String.format(
                 "SELECT %s FROM %s WHERE %s = :companyUuid FOR UPDATE",
@@ -45,7 +45,7 @@ public class JdbcLockManager implements LockManager {
                 jdbcTemplate.query(lockSql, Map.of("companyUuid", companyUuid), ResultSet::next));
 
             if (!locked) {
-                throw new IllegalStateException("No company row found for uuid=" + companyUuid);
+                throw new IllegalStateException("[org-sync] No company row found for uuid=" + companyUuid);
             }
             runnable.run();
         });
