@@ -26,7 +26,7 @@ public class OrgSyncSpringSample {
     public static void main(String[] args) {
         try (GenericApplicationContext context = new AnnotationConfigApplicationContext(SampleConfig.class, OrgSyncConfiguration.class)) {
             SyncEngine engine = context.getBean(SyncEngine.class);
-            engine.synchronizeCompany("spring-sample");
+            engine.synchronizeCompany("spring-sample", -1L);
         }
     }
 

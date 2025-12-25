@@ -33,19 +33,19 @@ public class SyncEngine {
         this.lockManager = Objects.requireNonNull(lockManager, "lockManager");
     }
 
-    public void synchronizeCompany(String companyId) {
-        lockManager.withLock(companyId, () -> doSynchronize(companyId));
+    public void synchronizeCompany(String companyUuid, Long logSeq) {
+        lockManager.withLock(companyUuid, () -> doSynchronize(companyUuid, logSeq));
     }
 
-    private void doSynchronize(String companyId) {
-        Optional<String> cursor = stateRepository.loadCursor(companyId);
-        SyncResponse response = client.fetchChanges(companyId, cursor.orElse(null));
+    private void doSynchronize(String companyUuid, Long logSeq) {
+        Optional<String> cursor = stateRepository.loadCursor(companyUuid);
+        SyncResponse response = client.fetchChanges(companyUuid, cursor.orElse(null));
         if (response.needSnapshot()) {
-            applySnapshot(companyId, response);
+            applySnapshot(companyUuid, response);
         } else {
-            applyDelta(companyId, response);
+            applyDelta(companyUuid, response);
         }
-        stateRepository.saveCursor(companyId, response.nextCursor());
+        stateRepository.saveCursor(companyUuid, response.nextCursor());
     }
 
     private void applySnapshot(String companyId, SyncResponse response) {

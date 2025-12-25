@@ -5,5 +5,5 @@ package org.orgsync.core.lock;
  */
 public interface LockManager {
 
-    void withLock(String companyId, Runnable runnable);
+    void withLock(String companyUuid, Runnable runnable);
 }
