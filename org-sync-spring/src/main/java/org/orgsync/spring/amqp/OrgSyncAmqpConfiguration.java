@@ -1,6 +1,7 @@
 package org.orgsync.spring.amqp;
 
 import org.orgsync.core.engine.SyncEngine;
+import org.orgsync.spring.amqp.OrgChartSyncQueueListener;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -20,7 +21,7 @@ public class OrgSyncAmqpConfiguration {
     }
 
     @Bean
-    public RabbitCompanyChangeListener rabbitCompanyChangeListener(SyncEngine syncEngine) {
-        return new RabbitCompanyChangeListener(syncEngine);
+    public OrgChartSyncQueueListener companySyncQueueListener(SyncEngine syncEngine) {
+        return new OrgChartSyncQueueListener(syncEngine);
     }
 }
