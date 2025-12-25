@@ -26,10 +26,15 @@ public class OrgChartSyncQueueListener {
             key = "${orgsync.amqp.org-chart.sync.routing-key:user_company.sync}"
 
     ))
-    public void handleOrgChartSyncRequest(CompanyChangeMessage companySyncMessage) {
-        if (companySyncMessage == null || !StringUtils.hasText(companySyncMessage.companyId())) {
-            throw new IllegalArgumentException(ERROR_PREFIX + "companyId is required in company change event");
+    public void handleOrgChartSyncRequest(OrgChartSyncPayload orgChartSyncPayload) {
+        if (orgChartSyncPayload == null || !StringUtils.hasText(orgChartSyncPayload.companyUuid())) {
+            throw new IllegalArgumentException(ERROR_PREFIX + "companyId is required in org chart sync event");
         }
-        syncEngine.synchronizeCompany(companySyncMessage.companyId());
+
+        if (orgChartSyncPayload.logSeq() == null) {
+            throw new IllegalArgumentException(ERROR_PREFIX + "logSeq is required in org chart sync event");
+        }
+
+        syncEngine.synchronizeCompany(orgChartSyncPayload.companyUuid(), orgChartSyncPayload.logSeq());
     }
 }

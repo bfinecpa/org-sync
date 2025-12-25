@@ -26,7 +26,7 @@ public class OrgSyncBootSampleApplication {
 
     @Bean
     CommandLineRunner runSync(SyncEngine syncEngine) {
-        return args -> syncEngine.synchronizeCompany("sample-company");
+        return args -> syncEngine.synchronizeCompany("sample-company", -1L);
     }
 
     @Bean
