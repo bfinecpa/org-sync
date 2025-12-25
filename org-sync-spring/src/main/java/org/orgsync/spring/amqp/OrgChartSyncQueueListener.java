@@ -21,9 +21,10 @@ public class OrgChartSyncQueueListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue("${orgsync.amqp.company-change-queue:orgsync.org-chart.sync.queue}"),
-            exchange = @Exchange("${orgsync.amqp.company-change-exchange:orgsync.company-change.exchange}"),
-            key = "${orgsync.amqp.company-change-routing-key:user_company.sync}"
+            value = @Queue("${orgsync.amqp.org-chart.sync.queue:orgsync.org-chart.sync.queue}"),
+            exchange = @Exchange("${orgsync.amqp.org-chart.sync.exchange:dop_user_company_sync}"),
+            key = "${orgsync.amqp.org-chart.sync.routing-key:user_company.sync}"
+
     ))
     public void handleOrgChartSyncRequest(CompanyChangeMessage companySyncMessage) {
         if (companySyncMessage == null || !StringUtils.hasText(companySyncMessage.companyId())) {
