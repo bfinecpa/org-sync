@@ -10,8 +10,8 @@ public interface OrgChartClient {
     /**
      * Retrieves changes after the given cursor for a company.
      * @param companyId company identifier
-     * @param sinceCursor last processed cursor or {@code null} when starting
+     * @param logSeq last processed cursor or {@code null} when starting
      * @return snapshot or delta response
      */
-    SyncResponse fetchChanges(String companyId, String sinceCursor);
+    SyncResponse fetchChanges(String companyId, Long logSeq);
 }

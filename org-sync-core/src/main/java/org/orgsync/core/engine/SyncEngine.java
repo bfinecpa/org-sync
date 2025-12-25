@@ -4,7 +4,7 @@ import org.orgsync.core.client.OrgChartClient;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.jdbc.JdbcApplier;
 import org.orgsync.core.lock.LockManager;
-import org.orgsync.core.state.SyncStateRepository;
+import org.orgsync.core.state.LogSeqRepository;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -16,13 +16,13 @@ import java.util.Optional;
 public class SyncEngine {
 
     private final OrgChartClient client;
-    private final SyncStateRepository stateRepository;
+    private final LogSeqRepository stateRepository;
     private final JdbcApplier jdbcApplier;
     private final DomainEventPublisher eventPublisher;
     private final LockManager lockManager;
 
     public SyncEngine(OrgChartClient client,
-                      SyncStateRepository stateRepository,
+                      LogSeqRepository stateRepository,
                       JdbcApplier jdbcApplier,
                       DomainEventPublisher eventPublisher,
                       LockManager lockManager) {
@@ -37,9 +37,12 @@ public class SyncEngine {
         lockManager.withLock(companyUuid, () -> doSynchronize(companyUuid, logSeq));
     }
 
-    private void doSynchronize(String companyUuid, Long logSeq) {
-        Optional<String> cursor = stateRepository.loadCursor(companyUuid);
-        SyncResponse response = client.fetchChanges(companyUuid, cursor.orElse(null));
+    private void doSynchronize(String companyUuid, Long newLogSeq) {
+        Long existedLogSeq = stateRepository.loadLogSeq(companyUuid).orElse(-1L);
+        if (newLogSeq <= existedLogSeq) {
+            return;
+        }
+        SyncResponse response = client.fetchChanges(companyUuid, existedLogSeq);
         if (response.needSnapshot()) {
             applySnapshot(companyUuid, response);
         } else {
