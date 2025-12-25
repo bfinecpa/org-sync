@@ -24,6 +24,7 @@ public class OrgChartSyncQueueListener {
             value = @Queue("${orgsync.amqp.org-chart.sync.queue:orgsync.org-chart.sync.queue}"),
             exchange = @Exchange("${orgsync.amqp.org-chart.sync.exchange:dop_user_company_sync}"),
             key = "${orgsync.amqp.org-chart.sync.routing-key:user_company.sync}"
+
     ))
     public void handleOrgChartSyncRequest(CompanyChangeMessage companySyncMessage) {
         if (companySyncMessage == null || !StringUtils.hasText(companySyncMessage.companyId())) {

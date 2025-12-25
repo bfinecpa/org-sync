@@ -17,6 +17,7 @@
 * 기본 큐 이름: `orgsync.org-chart.sync.queue` (환경변수/설정 `orgsync.amqp.org-chart.sync.queue`로 변경 가능)
 * 교환기: `dop_user_company_sync` (환경변수/설정 `orgsync.amqp.org-chart.sync.exchange`로 변경 가능)
 * 라우팅 키: `user_company.sync` (환경변수/설정 `orgsync.amqp.org-chart.sync.routing-key`로 변경 가능)
+
 * 메시지 페이로드(JSON): `{ "companyId": "<회사 ID>" }`
 * 소비 로직: 큐 수신 시 해당 `companyId`로 `SyncEngine.synchronizeCompany` 호출
 * 메시지 컨버터: `Jackson2JsonMessageConverter`
