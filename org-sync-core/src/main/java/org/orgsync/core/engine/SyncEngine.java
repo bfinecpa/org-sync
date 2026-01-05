@@ -3,23 +3,26 @@ package org.orgsync.core.engine;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.orgsync.core.Constants;
 import org.orgsync.core.client.OrgChartClient;
+import org.orgsync.core.config.OrgSyncProperties;
+import org.orgsync.core.config.OrgSyncProperties.FieldSpec;
+import org.orgsync.core.config.OrgSyncProperties.OrganizationCodeSpec;
+import org.orgsync.core.config.OrgSyncYamlLoader;
 import org.orgsync.core.dto.DomainKey;
 import org.orgsync.core.dto.DomainType;
 import org.orgsync.core.dto.LogInfoDto;
 import org.orgsync.core.dto.LogType;
 import org.orgsync.core.dto.OrganizationCodeDto;
-import org.orgsync.core.dto.ProvisionSequenceDto;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.jdbc.JdbcApplier;
 import org.orgsync.core.lock.LockManager;
 import org.orgsync.core.state.LogSeqRepository;
-
-import java.util.Objects;
 
 /**
  * Coordinates synchronization by pulling data from the org chart server and applying it
@@ -32,6 +35,7 @@ public class SyncEngine {
     private final JdbcApplier jdbcApplier;
     private final DomainEventPublisher eventPublisher;
     private final LockManager lockManager;
+    private final OrganizationCodeSpec organizationCodeSpec;
 
     public SyncEngine(OrgChartClient client,
                       LogSeqRepository logSeqRepository,
@@ -43,6 +47,9 @@ public class SyncEngine {
         this.jdbcApplier = Objects.requireNonNull(jdbcApplier, "jdbcApplier");
         this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher");
         this.lockManager = Objects.requireNonNull(lockManager, "lockManager");
+        OrgSyncProperties properties = OrgSyncYamlLoader.loadFromClasspath("application.yml");
+        this.organizationCodeSpec = properties.organizationCodeSpec()
+            .orElseThrow(() -> new IllegalStateException("organization-code spec is missing"));
     }
 
     public void synchronizeCompany(String companyUuid, Long logSeq) {
@@ -88,6 +95,7 @@ public class SyncEngine {
                     Object object = createObjects.getOrDefault(domainKey, new OrganizationCodeDto());
                     OrganizationCodeDto dto = (OrganizationCodeDto) object;
                     dto.set(logInfoDto);
+                    createObjects.put(domainKey, dto);
                 } else if (LogType.UPDATE.equals(logInfoDto.logType())) {
                     updateObjects.add(logInfoDto);
                 } else if (LogType.DELETE.equals(logInfoDto.logType())) {
@@ -102,14 +110,14 @@ public class SyncEngine {
 
 
         createObjects.forEach((key, value) -> {
-            /*
-            insert into dop_user (fdf, asdf, asdf, asdf, asdf)
-            values (asdf, adsf, asd, asd, asd,fads);
-             */
-
-            // TODO: create row로 바꾸고,
-            // TODO: jdbc를 이용해서 저장해야 한다.
-            // TODO: 생성 이벤트를 날려야 한다.
+            if (!(value instanceof OrganizationCodeDto organizationCodeDto)) {
+                return;
+            }
+            if (!organizationCodeSpec.isSyncEnabled()) {
+                return;
+            }
+            LinkedHashMap<String, Object> columnValues = buildColumnValues(organizationCodeDto);
+            jdbcApplier.insertRow(organizationCodeSpec.getTableName(), columnValues);
         });
 
         updateObjects.forEach(logInfoDto -> {
@@ -123,5 +131,33 @@ public class SyncEngine {
             //TODO: 삭제 이벤트를 날려야 한다.
         });
 
+    }
+
+    private LinkedHashMap<String, Object> buildColumnValues(OrganizationCodeDto organizationCodeDto) {
+        LinkedHashMap<String, Object> columnValues = new LinkedHashMap<>();
+        for (Map.Entry<String, FieldSpec> entry : organizationCodeSpec.getFields().entrySet()) {
+            String fieldName = entry.getKey();
+            FieldSpec fieldSpec = entry.getValue();
+            if (!fieldSpec.isEnabled()) {
+                continue;
+            }
+            Object value = extractFieldValue(organizationCodeDto, fieldName);
+            if (value != null && fieldSpec.getColumnName() != null) {
+                columnValues.put(fieldSpec.getColumnName(), value);
+            }
+        }
+        return columnValues;
+    }
+
+    private Object extractFieldValue(OrganizationCodeDto dto, String fieldName) {
+        return switch (fieldName) {
+            case "id" -> dto.getId();
+            case "code" -> dto.getCode();
+            case "type" -> dto.getType() != null ? dto.getType().name() : null;
+            case "name" -> dto.getName();
+            case "sortOrder" -> dto.getSortOrder();
+            case "multiLanguageDtoMap", "multiLanguageMap" -> dto.getMultiLanguageDtoMap();
+            default -> null;
+        };
     }
 }

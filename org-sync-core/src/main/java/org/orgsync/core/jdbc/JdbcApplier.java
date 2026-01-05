@@ -1,11 +1,14 @@
 package org.orgsync.core.jdbc;
 
 import org.orgsync.core.engine.SyncResponse;
-import org.orgsync.core.spec.OrgSyncSpec;
-import org.orgsync.core.spec.YamlSyncSpec;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 /**
  * Applies snapshot or delta responses into JDBC-accessible storage.
@@ -13,15 +16,9 @@ import java.util.Objects;
 public class JdbcApplier {
 
     private final DataSource dataSource;
-    private final OrgSyncSpec syncSpec;
 
-    public JdbcApplier(DataSource dataSource, OrgSyncSpec syncSpec) {
+    public JdbcApplier(DataSource dataSource) {
         this.dataSource = Objects.requireNonNull(dataSource, "dataSource");
-        this.syncSpec = Objects.requireNonNull(syncSpec, "syncSpec");
-    }
-
-    public JdbcApplier(DataSource dataSource, YamlSyncSpec syncSpec) {
-        this(dataSource, OrgSyncSpec.fromYaml(syncSpec));
     }
 
     public void applySnapshot(String companyId, SyncResponse response) {
@@ -32,11 +29,35 @@ public class JdbcApplier {
         // TODO: implement upsert/delete operations and event mapping
     }
 
-    public DataSource getDataSource() {
-        return dataSource;
+    public void insertRow(String tableName, LinkedHashMap<String, Object> columnValues) {
+        Objects.requireNonNull(tableName, "tableName");
+        Objects.requireNonNull(columnValues, "columnValues");
+        if (columnValues.isEmpty()) {
+            return;
+        }
+
+        StringJoiner columnJoiner = new StringJoiner(", ");
+        StringJoiner placeholderJoiner = new StringJoiner(", ");
+        columnValues.forEach((column, value) -> {
+            columnJoiner.add(column);
+            placeholderJoiner.add("?");
+        });
+
+        String sql = "INSERT INTO " + tableName + " (" + columnJoiner + ") VALUES (" + placeholderJoiner + ")";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            for (Object value : columnValues.values()) {
+                statement.setObject(index++, value);
+            }
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to insert row into " + tableName, e);
+        }
     }
 
-    public OrgSyncSpec getSyncSpec() {
-        return syncSpec;
+    public DataSource getDataSource() {
+        return dataSource;
     }
 }
