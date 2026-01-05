@@ -39,6 +39,8 @@
 * 스냅샷/델타 처리 분기
 * JDBC upsert/delete 반영
 * 트랜잭션/락/멱등성 보장
+  * `LockManager` 인터페이스만 의존하며, 기본 구현은 DB의 `SELECT ... FOR UPDATE` 기반 `JdbcLockManager`이다.
+  * 소비 애플리케이션은 인프라에 맞춰 자체 락 구현(예: Redis 뮤텍스, 다른 DB 락)을 주입할 수 있다.
 
 2. 저장 선택(프로젝션)
 
