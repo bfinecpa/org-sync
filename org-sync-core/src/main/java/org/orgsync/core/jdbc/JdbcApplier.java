@@ -29,6 +29,11 @@ public class JdbcApplier {
         // TODO: implement upsert/delete operations and event mapping
     }
 
+
+    public Long getCompanyId(String companyUuid) {
+        return null;
+    }
+
     public void insertRow(String tableName, LinkedHashMap<String, Object> columnValues) {
         Objects.requireNonNull(tableName, "tableName");
         Objects.requireNonNull(columnValues, "columnValues");
@@ -54,6 +59,44 @@ public class JdbcApplier {
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to insert row into " + tableName, e);
+        }
+    }
+
+    public void updateColumn(String tableName, String idColumnName, Object idValue, String columnName, Object columnValue) {
+        Objects.requireNonNull(tableName, "tableName");
+        Objects.requireNonNull(idColumnName, "idColumnName");
+        Objects.requireNonNull(columnName, "columnName");
+        if (idValue == null) {
+            throw new IllegalArgumentException("idValue must not be null when updating " + tableName);
+        }
+
+        String sql = "UPDATE " + tableName + " SET " + columnName + " = ? WHERE " + idColumnName + " = ?";
+
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setObject(1, columnValue);
+            statement.setObject(2, idValue);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to update row in " + tableName, e);
+        }
+    }
+
+    public void deleteRow(String tableName, String idColumnName, Object idValue) {
+        Objects.requireNonNull(tableName, "tableName");
+        Objects.requireNonNull(idColumnName, "idColumnName");
+        if (idValue == null) {
+            throw new IllegalArgumentException("idValue must not be null when deleting from " + tableName);
+        }
+
+        String sql = "DELETE FROM " + tableName + " WHERE " + idColumnName + " = ?";
+
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setObject(1, idValue);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to delete row from " + tableName, e);
         }
     }
 

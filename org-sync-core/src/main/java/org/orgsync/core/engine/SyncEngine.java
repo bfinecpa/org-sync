@@ -20,10 +20,12 @@ import org.orgsync.core.dto.LogInfoDto;
 import org.orgsync.core.dto.LogType;
 import org.orgsync.core.dto.OrganizationCodeDto;
 import org.orgsync.core.dto.ProvisionSequenceDto;
+import org.orgsync.core.dto.TargetDomain;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.jdbc.JdbcApplier;
 import org.orgsync.core.lock.LockManager;
 import org.orgsync.core.state.LogSeqRepository;
+import org.orgsync.core.util.MultiLanguageUtils;
 
 /**
  * Coordinates synchronization by pulling data from the org chart server and applying it
@@ -48,7 +50,7 @@ public class SyncEngine {
         this.jdbcApplier = Objects.requireNonNull(jdbcApplier, "jdbcApplier");
         this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher");
         this.lockManager = Objects.requireNonNull(lockManager, "lockManager");
-        OrgSyncProperties properties = OrgSyncYamlLoader.loadFromClasspath("application.yml");
+        OrgSyncProperties properties = OrgSyncYamlLoader.loadFromClasspath("org-sync-spec.yml");
         this.organizationCodeSpec = properties.organizationCodeSpec()
             .orElseThrow(() -> new IllegalStateException("organization-code spec is missing"));
     }
@@ -58,6 +60,7 @@ public class SyncEngine {
     }
 
     private void doSynchronize(String companyUuid, Long newLogSeq) {
+        //TODO: 이것도 yml로 바꾸고 내가 가져와야 한다.
         Long existedLogSeq = logSeqRepository.loadLogSeq(companyUuid).orElse(-1L);
         if (newLogSeq <= existedLogSeq) {
             return;
@@ -77,6 +80,8 @@ public class SyncEngine {
 
     private void applyDelta(String companyUuid, ProvisionSequenceDto sequenceDto) {
 
+        //TODO:companyUuid를 바탕으로 companyId 구해야 한다.
+        Long companyId = jdbcApplier.getCompanyId(companyUuid);
 
         Map<DomainKey, Object> createObjects = new HashMap<>();
         List<LogInfoDto> updateObjects = new ArrayList<>();
@@ -93,7 +98,7 @@ public class SyncEngine {
                 if (LogType.CREATE.equals(logInfoDto.logType())) {
                     Long domainId = logInfoDto.domainId();
                     DomainKey domainKey = new DomainKey(DomainType.ORGANIZATION_CODE, domainId);
-                    Object object = createObjects.getOrDefault(domainKey, new OrganizationCodeDto());
+                    Object object = createObjects.getOrDefault(domainKey, new OrganizationCodeDto(companyId));
                     OrganizationCodeDto dto = (OrganizationCodeDto) object;
                     dto.set(logInfoDto);
                     createObjects.put(domainKey, dto);
@@ -121,15 +126,26 @@ public class SyncEngine {
             jdbcApplier.insertRow(organizationCodeSpec.getTableName(), columnValues);
         });
 
-        updateObjects.forEach(logInfoDto -> {
+        String idColumnName = organizationCodeSpec.isSyncEnabled() ? requireIdColumnName() : null;
 
-            // TODO: jdbc를 이용해서 업데이트 해야한다.
-            // TODO: 업데이트 이벤트를 날려야 한다.
+        updateObjects.forEach(logInfoDto -> {
+            if (!organizationCodeSpec.isSyncEnabled()) {
+                return;
+            }
+            FieldSpec fieldSpec = organizationCodeSpec.getFields().get(logInfoDto.fieldName());
+            if (fieldSpec == null || !fieldSpec.isEnabled() || fieldSpec.getColumnName() == null) {
+                return;
+            }
+            Object updatedValue = convertUpdatedValue(logInfoDto);
+            jdbcApplier.updateColumn(organizationCodeSpec.getTableName(), idColumnName, logInfoDto.domainId(),
+                fieldSpec.getColumnName(), updatedValue);
         });
 
         deleteObjects.forEach(domainKey -> {
-            //TODO: jdbc를 이용해서 삭제 해야한다.
-            //TODO: 삭제 이벤트를 날려야 한다.
+            if (!organizationCodeSpec.isSyncEnabled()) {
+                return;
+            }
+            jdbcApplier.deleteRow(organizationCodeSpec.getTableName(), idColumnName, domainKey.domainId());
         });
 
     }
@@ -158,7 +174,35 @@ public class SyncEngine {
             case "name" -> dto.getName();
             case "sortOrder" -> dto.getSortOrder();
             case "multiLanguageDtoMap", "multiLanguageMap" -> dto.getMultiLanguageDtoMap();
+            case "companyId" -> dto.getCompanyId();
             default -> null;
         };
+    }
+
+    private Object convertUpdatedValue(LogInfoDto logInfoDto) {
+        String fieldName = logInfoDto.fieldName();
+        Object updatedValue = logInfoDto.updatedValue();
+        if (updatedValue == null) {
+            return null;
+        }
+
+        return switch (fieldName) {
+            case "id" -> Long.valueOf(updatedValue.toString());
+            case "code", "name" -> updatedValue.toString();
+            case "type" -> updatedValue.toString();
+            case "sortOrder" -> Integer.valueOf(updatedValue.toString());
+            case "multiLanguageDtoMap", "multiLanguageMap" ->
+                MultiLanguageUtils.parseJson(logInfoDto.domainId(), TargetDomain.ORGANIZATION_CODE,
+                    updatedValue.toString());
+            default -> updatedValue;
+        };
+    }
+
+    private String requireIdColumnName() {
+        FieldSpec idFieldSpec = organizationCodeSpec.getFields().get("id");
+        if (idFieldSpec == null || !idFieldSpec.isEnabled() || idFieldSpec.getColumnName() == null) {
+            throw new IllegalStateException(Constants.ERROR_PREFIX + "organization-code id column mapping is required");
+        }
+        return idFieldSpec.getColumnName();
     }
 }

@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public class OrgSyncProperties {
 
-    @JsonProperty("orgsync")
+    @JsonProperty("org-sync")
     private OrgSyncRoot root;
 
     public OrgSyncRoot getRoot() {

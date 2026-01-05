@@ -7,14 +7,23 @@ import org.orgsync.core.util.MultiLanguageUtils;
 public class OrganizationCodeDto implements Settable{
 
     private Long id;
+    private Long companyId;
     private String code;
     private OrganizationCodeType type;
     private String name;
     private int sortOrder;
     private Map<MultiLanguageType, MultiLanguageDto> multiLanguageDtoMap;
 
+    public OrganizationCodeDto(Long companyId) {
+        this.companyId = companyId;
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public Long getCompanyId() {
+        return companyId;
     }
 
     public String getCode() {
