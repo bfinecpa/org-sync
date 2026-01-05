@@ -6,7 +6,6 @@ import org.orgsync.core.engine.SyncResponse;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.lock.LockManager;
 import org.orgsync.core.state.LogSeqRepository;
-import org.orgsync.core.spec.YamlSyncSpec;
 import org.orgsync.spring.config.OrgSyncConfiguration;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
 import org.orgsync.spring.lock.InMemoryLockManager;
@@ -52,11 +51,6 @@ public class OrgSyncSpringSample {
                     this.logSeq = nextCursor;
                 }
             };
-        }
-
-        @Bean
-        public YamlSyncSpec yamlSyncSpec() {
-            return new YamlSyncSpec(Collections.emptyMap());
         }
 
         @Bean

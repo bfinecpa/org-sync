@@ -6,9 +6,6 @@ import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.jdbc.JdbcApplier;
 import org.orgsync.core.lock.LockManager;
-import org.orgsync.core.spec.OrgSyncSpec;
-import org.orgsync.core.spec.SpecValidator;
-import org.orgsync.core.spec.YamlSpecLoader;
 import org.orgsync.core.state.LogSeqRepository;
 import org.orgsync.spring.config.OrgSyncConfiguration;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
@@ -27,7 +24,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.sql.DataSource;
-import java.nio.file.Path;
 
 /**
  * Spring Boot auto-configuration that exposes the sync engine and defaults.
@@ -63,27 +59,9 @@ public class OrgSyncAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public SpecValidator specValidator() {
-        return new SpecValidator();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    public YamlSpecLoader yamlSpecLoader() {
-        return new YamlSpecLoader();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    public OrgSyncSpec orgSyncSpec(YamlSpecLoader loader) {
-        return OrgSyncSpec.fromYaml(loader.load(Path.of("org-sync.yaml")));
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    @ConditionalOnBean({DataSource.class, OrgSyncSpec.class})
-    public JdbcApplier jdbcApplier(DataSource dataSource, OrgSyncSpec syncSpec) {
-        return new JdbcApplier(dataSource, syncSpec);
+    @ConditionalOnBean({DataSource.class})
+    public JdbcApplier jdbcApplier(DataSource dataSource) {
+        return new JdbcApplier(dataSource);
     }
 
     @Bean

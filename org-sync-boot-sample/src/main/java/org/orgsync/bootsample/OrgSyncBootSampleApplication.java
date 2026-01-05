@@ -6,7 +6,6 @@ import org.orgsync.core.engine.SyncResponse;
 import org.orgsync.core.event.DomainEvent;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.state.LogSeqRepository;
-import org.orgsync.core.spec.YamlSyncSpec;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -49,11 +48,6 @@ public class OrgSyncBootSampleApplication {
                 this.logSeq = nextCursor;
             }
         };
-    }
-
-    @Bean
-    YamlSyncSpec yamlSyncSpec() {
-        return new YamlSyncSpec(Collections.emptyMap());
     }
 
     @Bean
