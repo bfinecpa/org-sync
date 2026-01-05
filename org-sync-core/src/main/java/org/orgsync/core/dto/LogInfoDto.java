@@ -1,13 +1,13 @@
-package org.orgsync.spring.client;
+package org.orgsync.core.dto;
 
 /**
  * Representation of a single log entry returned by the upstream provision API.
  */
-public record LogInfoResponseDto(
-        String domain,
+public record LogInfoDto(
+        DomainType domain,
         Long domainId,
         String fieldName,
         Object updatedValue,
-        String logType
+        LogType logType
 ) {
 }

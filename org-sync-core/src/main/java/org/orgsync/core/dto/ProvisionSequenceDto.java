@@ -1,4 +1,4 @@
-package org.orgsync.spring.client;
+package org.orgsync.core.dto;
 
 import java.util.List;
 
@@ -10,6 +10,6 @@ public record ProvisionSequenceDto(
         List<Long> snapshotIdList,
         Long logSeq,
         boolean needUpdateNextLog,
-        List<LogInfoResponseDto> logInfoList
+        List<LogInfoDto> logInfoList
 ) {
 }

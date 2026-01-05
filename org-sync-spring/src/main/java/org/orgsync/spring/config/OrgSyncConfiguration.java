@@ -11,7 +11,6 @@ import org.orgsync.core.spec.YamlSpecLoader;
 import org.orgsync.core.state.LogSeqRepository;
 import org.orgsync.spring.client.DefaultOrgChartClient;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -30,7 +29,6 @@ public class OrgSyncConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean
     public OrgChartClient defaultOrgChartClient() {
         return new DefaultOrgChartClient();
     }
@@ -57,11 +55,11 @@ public class OrgSyncConfiguration {
     }
 
     @Bean
-    public SyncEngine syncEngine(OrgChartClient client,
+    public SyncEngine syncEngine(OrgChartClient defaultOrgChartClient,
                                  LogSeqRepository logSeqRepository,
                                  JdbcApplier jdbcApplier,
                                  DomainEventPublisher eventPublisher,
                                  LockManager lockManager) {
-        return new SyncEngine(client, logSeqRepository, jdbcApplier, eventPublisher, lockManager);
+        return new SyncEngine(defaultOrgChartClient, logSeqRepository, jdbcApplier, eventPublisher, lockManager);
     }
 }
