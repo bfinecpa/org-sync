@@ -1,0 +1,27 @@
+orgsync:
+  spec:
+    domain:
+      organization-code:
+        sync-enabled: true
+        table-name: dop_organization_code
+        fields:
+          id:
+            enabled: true
+            column-name: id
+          code:
+            enabled: true
+            column-name: code
+          type:
+            enabled: true
+            column-name: type
+          name:
+            enabled: true
+            column-name: name
+          sortOrder:
+            enabled: true
+            column-name: sort_order
+          multiLanguageMap:
+            enalbed: true
+
+
+

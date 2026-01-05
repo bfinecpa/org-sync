@@ -1,6 +1,6 @@
 package org.orgsync.core.client;
 
-import org.orgsync.core.engine.SyncResponse;
+import org.orgsync.core.dto.ProvisionSequenceDto;
 
 /**
  * Fetches snapshot or delta data from the upstream org chart server.
@@ -13,5 +13,5 @@ public interface OrgChartClient {
      * @param logSeq last processed cursor or {@code null} when starting
      * @return snapshot or delta response
      */
-    SyncResponse fetchChanges(String companyId, Long logSeq);
+    ProvisionSequenceDto fetchChanges(String companyId, Long logSeq);
 }
