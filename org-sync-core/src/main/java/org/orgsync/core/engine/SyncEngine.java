@@ -19,6 +19,7 @@ import org.orgsync.core.dto.DomainType;
 import org.orgsync.core.dto.LogInfoDto;
 import org.orgsync.core.dto.LogType;
 import org.orgsync.core.dto.OrganizationCodeDto;
+import org.orgsync.core.dto.ProvisionSequenceDto;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.jdbc.JdbcApplier;
 import org.orgsync.core.lock.LockManager;
