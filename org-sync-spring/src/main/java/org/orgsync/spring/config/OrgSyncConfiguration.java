@@ -28,6 +28,11 @@ public class OrgSyncConfiguration {
     }
 
     @Bean
+    public OrgChartClient defaultOrgChartClient() {
+        return new DefaultOrgChartClient();
+    }
+
+    @Bean
     public YamlSpecLoader yamlSpecLoader() {
         return new YamlSpecLoader();
     }
@@ -49,11 +54,11 @@ public class OrgSyncConfiguration {
     }
 
     @Bean
-    public SyncEngine syncEngine(OrgChartClient client,
+    public SyncEngine syncEngine(OrgChartClient defaultOrgChartClient,
                                  LogSeqRepository logSeqRepository,
                                  JdbcApplier jdbcApplier,
                                  DomainEventPublisher eventPublisher,
                                  LockManager lockManager) {
-        return new SyncEngine(client, logSeqRepository, jdbcApplier, eventPublisher, lockManager);
+        return new SyncEngine(defaultOrgChartClient, logSeqRepository, jdbcApplier, eventPublisher, lockManager);
     }
 }

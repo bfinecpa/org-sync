@@ -29,6 +29,12 @@ subprojects {
     }
 }
 
+project(':org-sync-core') {
+    dependencies {
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.4'
+    }
+}
+
 project(':org-sync-spring') {
     dependencies {
         api project(':org-sync-core')
