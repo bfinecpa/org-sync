@@ -15,11 +15,53 @@ public class OrgSyncProperties {
         return root;
     }
 
-    public Optional<OrganizationCodeSpec> organizationCodeSpec() {
+    public Optional<DomainSpec> organizationCodeSpec() {
         if (root == null || root.getSpec() == null || root.getSpec().getDomain() == null) {
             return Optional.empty();
         }
         return Optional.ofNullable(root.getSpec().getDomain().getOrganizationCode());
+    }
+
+    public Optional<DomainSpec> departmentSpec() {
+        if (root == null || root.getSpec() == null || root.getSpec().getDomain() == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(root.getSpec().getDomain().getDepartment());
+    }
+
+    public Optional<DomainSpec> userSpec() {
+        if (root == null || root.getSpec() == null || root.getSpec().getDomain() == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(root.getSpec().getDomain().getUser());
+    }
+
+    public Optional<DomainSpec> relationMemberSpec() {
+        if (root == null || root.getSpec() == null || root.getSpec().getDomain() == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(root.getSpec().getDomain().getRelationMember());
+    }
+
+    public Optional<DomainSpec> integrationSpec() {
+        if (root == null || root.getSpec() == null || root.getSpec().getDomain() == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(root.getSpec().getDomain().getIntegration());
+    }
+
+    public Optional<DomainSpec> companyGroupSpec() {
+        if (root == null || root.getSpec() == null || root.getSpec().getDomain() == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(root.getSpec().getDomain().getCompanyGroup());
+    }
+
+    public Optional<DomainSpec> companySpec() {
+        if (root == null || root.getSpec() == null || root.getSpec().getDomain() == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(root.getSpec().getDomain().getCompany());
     }
 
     public static class OrgSyncRoot {
@@ -51,18 +93,78 @@ public class OrgSyncProperties {
     public static class Domain {
 
         @JsonProperty("organization-code")
-        private OrganizationCodeSpec organizationCode;
+        private DomainSpec organizationCode;
+        @JsonProperty("department")
+        private DomainSpec department;
+        @JsonProperty("user")
+        private DomainSpec user;
+        @JsonProperty("relation-member")
+        private DomainSpec relationMember;
+        @JsonProperty("integration")
+        private DomainSpec integration;
+        @JsonProperty("company-group")
+        private DomainSpec companyGroup;
+        @JsonProperty("company")
+        private DomainSpec company;
 
-        public OrganizationCodeSpec getOrganizationCode() {
+        public DomainSpec getOrganizationCode() {
             return organizationCode;
         }
 
-        public void setOrganizationCode(OrganizationCodeSpec organizationCode) {
+        public void setOrganizationCode(DomainSpec organizationCode) {
             this.organizationCode = organizationCode;
+        }
+
+        public DomainSpec getDepartment() {
+            return department;
+        }
+
+        public void setDepartment(DomainSpec department) {
+            this.department = department;
+        }
+
+        public DomainSpec getUser() {
+            return user;
+        }
+
+        public void setUser(DomainSpec user) {
+            this.user = user;
+        }
+
+        public DomainSpec getRelationMember() {
+            return relationMember;
+        }
+
+        public void setRelationMember(DomainSpec relationMember) {
+            this.relationMember = relationMember;
+        }
+
+        public DomainSpec getIntegration() {
+            return integration;
+        }
+
+        public void setIntegration(DomainSpec integration) {
+            this.integration = integration;
+        }
+
+        public DomainSpec getCompanyGroup() {
+            return companyGroup;
+        }
+
+        public void setCompanyGroup(DomainSpec companyGroup) {
+            this.companyGroup = companyGroup;
+        }
+
+        public DomainSpec getCompany() {
+            return company;
+        }
+
+        public void setCompany(DomainSpec company) {
+            this.company = company;
         }
     }
 
-    public static class OrganizationCodeSpec {
+    public static class DomainSpec {
 
         @JsonProperty("sync-enabled")
         private boolean syncEnabled;
