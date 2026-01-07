@@ -62,7 +62,7 @@ public class SyncEngine {
     private final IntegrationRepository integrationRepository;
     private final CompanyGroupRepository companyGroupRepository;
     private final CompanyRepository companyRepository;
-    private final SyncDeltaCallback deltaCallback;
+    private final SyncDomainCallbacks domainCallbacks;
     private final Map<DomainType, DomainSpec> domainSpecMap = new HashMap<>();
     private final DomainSpec organizationCodeSpec;
 
@@ -79,7 +79,7 @@ public class SyncEngine {
                       CompanyRepository companyRepository) {
         this(client, logSeqRepository, eventPublisher, lockManager, organizationCodeRepository, departmentRepository,
             userRepository, relationMemberRepository, integrationRepository, companyGroupRepository, companyRepository,
-            SyncDeltaCallback.noop());
+            SyncDomainCallbacks.noop());
     }
 
     public SyncEngine(OrgChartClient client,
@@ -93,7 +93,7 @@ public class SyncEngine {
                       IntegrationRepository integrationRepository,
                       CompanyGroupRepository companyGroupRepository,
                       CompanyRepository companyRepository,
-                      SyncDeltaCallback deltaCallback) {
+                      SyncDomainCallbacks domainCallbacks) {
         this.client = Objects.requireNonNull(client, "client");
         this.logSeqRepository = Objects.requireNonNull(logSeqRepository, "logSeqRepository");
         this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher");
@@ -106,7 +106,7 @@ public class SyncEngine {
         this.integrationRepository = Objects.requireNonNull(integrationRepository, "integrationRepository");
         this.companyGroupRepository = Objects.requireNonNull(companyGroupRepository, "companyGroupRepository");
         this.companyRepository = Objects.requireNonNull(companyRepository, "companyRepository");
-        this.deltaCallback = Objects.requireNonNull(deltaCallback, "deltaCallback");
+        this.domainCallbacks = Objects.requireNonNull(domainCallbacks, "domainCallbacks");
         OrgSyncProperties properties = OrgSyncYamlLoader.loadFromClasspath("org-sync-spec.yml");
         this.organizationCodeSpec = properties.organizationCodeSpec()
             .orElseThrow(() -> new IllegalStateException("organization-code spec is missing"));
@@ -206,7 +206,29 @@ public class SyncEngine {
                 return;
             }
             applyCreate(companyUuid, key.domainType(), value);
-            deltaCallback.afterCreate(companyUuid, key.domainType(), key.domainId(), fieldValues, value);
+            switch (key.domainType()) {
+                case ORGANIZATION_CODE ->
+                    domainCallbacks.organizationCode().afterCreate(companyUuid, key.domainId(), fieldValues,
+                        (OrganizationCodeDto) value);
+                case DEPARTMENT ->
+                    domainCallbacks.department().afterCreate(companyUuid, key.domainId(), fieldValues,
+                        (DepartmentDto) value);
+                case USER ->
+                    domainCallbacks.user().afterCreate(companyUuid, key.domainId(), fieldValues, (UserDto) value);
+                case RELATION_MEMBER ->
+                    domainCallbacks.relationMember().afterCreate(companyUuid, key.domainId(), fieldValues,
+                        (MemberDto) value);
+                case INTEGRATION ->
+                    domainCallbacks.integration().afterCreate(companyUuid, key.domainId(), fieldValues,
+                        (IntegrationDto) value);
+                case COMPANY_GROUP ->
+                    domainCallbacks.companyGroup().afterCreate(companyUuid, key.domainId(), fieldValues,
+                        (CompanyGroupDto) value);
+                case COMPANY ->
+                    domainCallbacks.company().afterCreate(companyUuid, key.domainId(), fieldValues, (CompanyDto) value);
+                default -> {
+                }
+            }
         });
 
         updateObjects.forEach(logInfoDto -> {
@@ -220,7 +242,20 @@ public class SyncEngine {
             }
             Object updatedValue = convertUpdatedValue(logInfoDto.domain(), logInfoDto);
             applyUpdate(companyUuid, logInfoDto, updatedValue);
-            deltaCallback.afterUpdate(companyUuid, logInfoDto, updatedValue);
+            switch (logInfoDto.domain()) {
+                case ORGANIZATION_CODE ->
+                    domainCallbacks.organizationCode().afterUpdate(companyUuid, logInfoDto, updatedValue);
+                case DEPARTMENT -> domainCallbacks.department().afterUpdate(companyUuid, logInfoDto, updatedValue);
+                case USER -> domainCallbacks.user().afterUpdate(companyUuid, logInfoDto, updatedValue);
+                case RELATION_MEMBER ->
+                    domainCallbacks.relationMember().afterUpdate(companyUuid, logInfoDto, updatedValue);
+                case INTEGRATION -> domainCallbacks.integration().afterUpdate(companyUuid, logInfoDto, updatedValue);
+                case COMPANY_GROUP ->
+                    domainCallbacks.companyGroup().afterUpdate(companyUuid, logInfoDto, updatedValue);
+                case COMPANY -> domainCallbacks.company().afterUpdate(companyUuid, logInfoDto, updatedValue);
+                default -> {
+                }
+            }
         });
 
         deleteObjects.forEach(domainKey -> {
@@ -230,7 +265,20 @@ public class SyncEngine {
             }
             // TODO: 외래키로 연관된 데이터는 먼저 없애야 한다. interface를 만들고 라이브러리 사용자들이 구현 하도록하자.
             applyDelete(companyUuid, domainKey.domainType(), domainKey.domainId());
-            deltaCallback.afterDelete(companyUuid, domainKey.domainType(), domainKey.domainId());
+            switch (domainKey.domainType()) {
+                case ORGANIZATION_CODE ->
+                    domainCallbacks.organizationCode().afterDelete(companyUuid, domainKey.domainId());
+                case DEPARTMENT -> domainCallbacks.department().afterDelete(companyUuid, domainKey.domainId());
+                case USER -> domainCallbacks.user().afterDelete(companyUuid, domainKey.domainId());
+                case RELATION_MEMBER ->
+                    domainCallbacks.relationMember().afterDelete(companyUuid, domainKey.domainId());
+                case INTEGRATION -> domainCallbacks.integration().afterDelete(companyUuid, domainKey.domainId());
+                case COMPANY_GROUP ->
+                    domainCallbacks.companyGroup().afterDelete(companyUuid, domainKey.domainId());
+                case COMPANY -> domainCallbacks.company().afterDelete(companyUuid, domainKey.domainId());
+                default -> {
+                }
+            }
         });
 
     }

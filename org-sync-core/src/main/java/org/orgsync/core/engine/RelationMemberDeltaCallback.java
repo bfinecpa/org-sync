@@ -1,24 +1,23 @@
 package org.orgsync.core.engine;
 
 import java.util.Map;
-import org.orgsync.core.dto.DomainType;
 import org.orgsync.core.dto.LogInfoDto;
+import org.orgsync.core.dto.MemberDto;
 
 /**
- * Callback invoked after delta operations are applied.
+ * Callback invoked after relation member delta operations are applied.
  */
-public interface SyncDeltaCallback {
+public interface RelationMemberDeltaCallback {
 
-    static SyncDeltaCallback noop() {
-        return new SyncDeltaCallback() {
+    static RelationMemberDeltaCallback noop() {
+        return new RelationMemberDeltaCallback() {
         };
     }
 
     default void afterCreate(String companyUuid,
-                             DomainType domainType,
-                             Long domainId,
+                             Long memberId,
                              Map<String, Object> columnValues,
-                             Object dto) {
+                             MemberDto dto) {
     }
 
     default void afterUpdate(String companyUuid,
@@ -27,7 +26,6 @@ public interface SyncDeltaCallback {
     }
 
     default void afterDelete(String companyUuid,
-                             DomainType domainType,
-                             Long domainId) {
+                             Long memberId) {
     }
 }
