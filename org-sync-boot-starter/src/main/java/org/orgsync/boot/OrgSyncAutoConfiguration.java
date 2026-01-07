@@ -4,8 +4,14 @@ import org.orgsync.boot.config.CompanyLockProperties;
 import org.orgsync.core.client.OrgChartClient;
 import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.event.DomainEventPublisher;
-import org.orgsync.core.jdbc.JdbcApplier;
 import org.orgsync.core.lock.LockManager;
+import org.orgsync.core.repository.CompanyGroupRepository;
+import org.orgsync.core.repository.CompanyRepository;
+import org.orgsync.core.repository.DepartmentRepository;
+import org.orgsync.core.repository.IntegrationRepository;
+import org.orgsync.core.repository.OrganizationCodeRepository;
+import org.orgsync.core.repository.RelationMemberRepository;
+import org.orgsync.core.repository.UserRepository;
 import org.orgsync.core.state.LogSeqRepository;
 import org.orgsync.spring.config.OrgSyncConfiguration;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
@@ -59,18 +65,19 @@ public class OrgSyncAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnBean({DataSource.class})
-    public JdbcApplier jdbcApplier(DataSource dataSource) {
-        return new JdbcApplier(dataSource);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
     public SyncEngine syncEngine(OrgChartClient client,
                                  LogSeqRepository logSeqRepository,
-                                 JdbcApplier jdbcApplier,
                                  DomainEventPublisher eventPublisher,
-                                 LockManager lockManager) {
-        return new SyncEngine(client, logSeqRepository, jdbcApplier, eventPublisher, lockManager);
+                                 LockManager lockManager,
+                                 OrganizationCodeRepository organizationCodeRepository,
+                                 DepartmentRepository departmentRepository,
+                                 UserRepository userRepository,
+                                 RelationMemberRepository relationMemberRepository,
+                                 IntegrationRepository integrationRepository,
+                                 CompanyGroupRepository companyGroupRepository,
+                                 CompanyRepository companyRepository) {
+        return new SyncEngine(client, logSeqRepository, eventPublisher, lockManager, organizationCodeRepository,
+            departmentRepository, userRepository, relationMemberRepository, integrationRepository,
+            companyGroupRepository, companyRepository);
     }
 }

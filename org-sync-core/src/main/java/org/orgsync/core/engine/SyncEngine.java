@@ -34,45 +34,78 @@ import org.orgsync.core.dto.EmployeeType;
 import org.orgsync.core.dto.MemberType;
 import org.orgsync.core.dto.UserStatus;
 import org.orgsync.core.event.DomainEventPublisher;
-import org.orgsync.core.jdbc.JdbcApplier;
 import org.orgsync.core.lock.LockManager;
+import org.orgsync.core.repository.CompanyGroupRepository;
+import org.orgsync.core.repository.CompanyRepository;
+import org.orgsync.core.repository.DepartmentRepository;
+import org.orgsync.core.repository.IntegrationRepository;
+import org.orgsync.core.repository.OrganizationCodeRepository;
+import org.orgsync.core.repository.RelationMemberRepository;
+import org.orgsync.core.repository.UserRepository;
 import org.orgsync.core.state.LogSeqRepository;
 import org.orgsync.core.util.MultiLanguageUtils;
 
 /**
  * Coordinates synchronization by pulling data from the org chart server and applying it
- * to a downstream database.
+ * to downstream repositories.
  */
 public class SyncEngine {
 
     private final OrgChartClient client;
     private final LogSeqRepository logSeqRepository;
-    private final JdbcApplier jdbcApplier;
     private final DomainEventPublisher eventPublisher;
     private final LockManager lockManager;
+    private final OrganizationCodeRepository organizationCodeRepository;
+    private final DepartmentRepository departmentRepository;
+    private final UserRepository userRepository;
+    private final RelationMemberRepository relationMemberRepository;
+    private final IntegrationRepository integrationRepository;
+    private final CompanyGroupRepository companyGroupRepository;
+    private final CompanyRepository companyRepository;
     private final SyncDeltaCallback deltaCallback;
     private final Map<DomainType, DomainSpec> domainSpecMap = new HashMap<>();
     private final DomainSpec organizationCodeSpec;
 
     public SyncEngine(OrgChartClient client,
                       LogSeqRepository logSeqRepository,
-                      JdbcApplier jdbcApplier,
                       DomainEventPublisher eventPublisher,
-                      LockManager lockManager) {
-        this(client, logSeqRepository, jdbcApplier, eventPublisher, lockManager, SyncDeltaCallback.noop());
+                      LockManager lockManager,
+                      OrganizationCodeRepository organizationCodeRepository,
+                      DepartmentRepository departmentRepository,
+                      UserRepository userRepository,
+                      RelationMemberRepository relationMemberRepository,
+                      IntegrationRepository integrationRepository,
+                      CompanyGroupRepository companyGroupRepository,
+                      CompanyRepository companyRepository) {
+        this(client, logSeqRepository, eventPublisher, lockManager, organizationCodeRepository, departmentRepository,
+            userRepository, relationMemberRepository, integrationRepository, companyGroupRepository, companyRepository,
+            SyncDeltaCallback.noop());
     }
 
     public SyncEngine(OrgChartClient client,
                       LogSeqRepository logSeqRepository,
-                      JdbcApplier jdbcApplier,
                       DomainEventPublisher eventPublisher,
                       LockManager lockManager,
+                      OrganizationCodeRepository organizationCodeRepository,
+                      DepartmentRepository departmentRepository,
+                      UserRepository userRepository,
+                      RelationMemberRepository relationMemberRepository,
+                      IntegrationRepository integrationRepository,
+                      CompanyGroupRepository companyGroupRepository,
+                      CompanyRepository companyRepository,
                       SyncDeltaCallback deltaCallback) {
         this.client = Objects.requireNonNull(client, "client");
         this.logSeqRepository = Objects.requireNonNull(logSeqRepository, "logSeqRepository");
-        this.jdbcApplier = Objects.requireNonNull(jdbcApplier, "jdbcApplier");
         this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher");
         this.lockManager = Objects.requireNonNull(lockManager, "lockManager");
+        this.organizationCodeRepository = Objects.requireNonNull(organizationCodeRepository,
+            "organizationCodeRepository");
+        this.departmentRepository = Objects.requireNonNull(departmentRepository, "departmentRepository");
+        this.userRepository = Objects.requireNonNull(userRepository, "userRepository");
+        this.relationMemberRepository = Objects.requireNonNull(relationMemberRepository, "relationMemberRepository");
+        this.integrationRepository = Objects.requireNonNull(integrationRepository, "integrationRepository");
+        this.companyGroupRepository = Objects.requireNonNull(companyGroupRepository, "companyGroupRepository");
+        this.companyRepository = Objects.requireNonNull(companyRepository, "companyRepository");
         this.deltaCallback = Objects.requireNonNull(deltaCallback, "deltaCallback");
         OrgSyncProperties properties = OrgSyncYamlLoader.loadFromClasspath("org-sync-spec.yml");
         this.organizationCodeSpec = properties.organizationCodeSpec()
@@ -111,12 +144,7 @@ public class SyncEngine {
 
     private void applyDelta(String companyUuid, ProvisionSequenceDto sequenceDto) {
 
-        DomainSpec companySpec = domainSpecMap.get(DomainType.COMPANY);
-        String companyTableName = companySpec.getTableName();
-        Map<String, FieldSpec> fields = companySpec.getFields();
-        String companyUuidColumnName=  fields.get("companyUuid").getColumnName();
-        String companyIdColumnName=  fields.get("id").getColumnName();
-        Long companyId = jdbcApplier.getCompanyId(companyUuid, companyTableName, companyUuidColumnName, companyIdColumnName);
+        Long companyId = companyRepository.findCompanyIdByUuid(companyUuid).orElse(null);
 
         Map<DomainKey, Object> createObjects = new HashMap<>();
         List<LogInfoDto> updateObjects = new ArrayList<>();
@@ -173,12 +201,12 @@ public class SyncEngine {
             if (domainSpec == null || !domainSpec.isSyncEnabled()) {
                 return;
             }
-            LinkedHashMap<String, Object> columnValues = buildColumnValues(key.domainType(), value);
-            if (columnValues.isEmpty()) {
+            LinkedHashMap<String, Object> fieldValues = buildFieldValues(key.domainType(), value);
+            if (fieldValues.isEmpty()) {
                 return;
             }
-            jdbcApplier.insertRow(domainSpec.getTableName(), columnValues);
-            deltaCallback.afterCreate(companyUuid, key.domainType(), key.domainId(), columnValues, value);
+            applyCreate(companyUuid, key.domainType(), value);
+            deltaCallback.afterCreate(companyUuid, key.domainType(), key.domainId(), fieldValues, value);
         });
 
         updateObjects.forEach(logInfoDto -> {
@@ -186,14 +214,12 @@ public class SyncEngine {
             if (domainSpec == null || !domainSpec.isSyncEnabled()) {
                 return;
             }
-            String idColumnName = requireIdColumnName(domainSpec, logInfoDto.domain());
             FieldSpec fieldSpec = domainSpec.getFields().get(logInfoDto.fieldName());
-            if (fieldSpec == null || !fieldSpec.isEnabled() || fieldSpec.getColumnName() == null) {
+            if (fieldSpec == null || !fieldSpec.isEnabled()) {
                 return;
             }
             Object updatedValue = convertUpdatedValue(logInfoDto.domain(), logInfoDto);
-            jdbcApplier.updateColumn(domainSpec.getTableName(), idColumnName, logInfoDto.domainId(),
-                fieldSpec.getColumnName(), updatedValue);
+            applyUpdate(companyUuid, logInfoDto, updatedValue);
             deltaCallback.afterUpdate(companyUuid, logInfoDto, updatedValue);
         });
 
@@ -202,9 +228,8 @@ public class SyncEngine {
             if (domainSpec == null || !domainSpec.isSyncEnabled()) {
                 return;
             }
-            String idColumnName = requireIdColumnName(domainSpec, domainKey.domainType());
             // TODO: 외래키로 연관된 데이터는 먼저 없애야 한다. interface를 만들고 라이브러리 사용자들이 구현 하도록하자.
-            jdbcApplier.deleteRow(domainSpec.getTableName(), idColumnName, domainKey.domainId());
+            applyDelete(companyUuid, domainKey.domainType(), domainKey.domainId());
             deltaCallback.afterDelete(companyUuid, domainKey.domainType(), domainKey.domainId());
         });
 
@@ -223,11 +248,11 @@ public class SyncEngine {
         };
     }
 
-    private LinkedHashMap<String, Object> buildColumnValues(DomainType domainType, Object dto) {
+    private LinkedHashMap<String, Object> buildFieldValues(DomainType domainType, Object dto) {
         DomainSpec domainSpec = domainSpecMap.get(domainType);
-        LinkedHashMap<String, Object> columnValues = new LinkedHashMap<>();
+        LinkedHashMap<String, Object> fieldValues = new LinkedHashMap<>();
         if (domainSpec == null) {
-            return columnValues;
+            return fieldValues;
         }
         for (Map.Entry<String, FieldSpec> entry : domainSpec.getFields().entrySet()) {
             String fieldName = entry.getKey();
@@ -236,11 +261,11 @@ public class SyncEngine {
                 continue;
             }
             Object value = extractFieldValue(domainType, dto, fieldName);
-            if (value != null && fieldSpec.getColumnName() != null) {
-                columnValues.put(fieldSpec.getColumnName(), value);
+            if (value != null) {
+                fieldValues.put(fieldName, value);
             }
         }
-        return columnValues;
+        return fieldValues;
     }
 
     private Object extractFieldValue(DomainType domainType, Object dto, String fieldName) {
@@ -421,12 +446,49 @@ public class SyncEngine {
             .collect(Collectors.toList());
     }
 
-    private String requireIdColumnName(DomainSpec domainSpec, DomainType domainType) {
-        FieldSpec idFieldSpec = domainSpec.getFields().get("id");
-        if (idFieldSpec == null || !idFieldSpec.isEnabled() || idFieldSpec.getColumnName() == null) {
-            throw new IllegalStateException(Constants.ERROR_PREFIX + domainType.name().toLowerCase()
-                + " id column mapping is required");
+    private void applyCreate(String companyUuid, DomainType domainType, Object dto) {
+        switch (domainType) {
+            case ORGANIZATION_CODE -> organizationCodeRepository.create(companyUuid, (OrganizationCodeDto) dto);
+            case DEPARTMENT -> departmentRepository.create(companyUuid, (DepartmentDto) dto);
+            case USER -> userRepository.create(companyUuid, (UserDto) dto);
+            case RELATION_MEMBER -> relationMemberRepository.create(companyUuid, (MemberDto) dto);
+            case INTEGRATION -> integrationRepository.create(companyUuid, (IntegrationDto) dto);
+            case COMPANY_GROUP -> companyGroupRepository.create(companyUuid, (CompanyGroupDto) dto);
+            case COMPANY -> companyRepository.create(companyUuid, (CompanyDto) dto);
+            default -> throw new IllegalArgumentException(Constants.ERROR_PREFIX + "not support domain type");
         }
-        return idFieldSpec.getColumnName();
+    }
+
+    private void applyUpdate(String companyUuid, LogInfoDto logInfoDto, Object updatedValue) {
+        switch (logInfoDto.domain()) {
+            case ORGANIZATION_CODE -> organizationCodeRepository.update(companyUuid, logInfoDto.domainId(),
+                logInfoDto.fieldName(), updatedValue);
+            case DEPARTMENT -> departmentRepository.update(companyUuid, logInfoDto.domainId(), logInfoDto.fieldName(),
+                updatedValue);
+            case USER -> userRepository.update(companyUuid, logInfoDto.domainId(), logInfoDto.fieldName(),
+                updatedValue);
+            case RELATION_MEMBER -> relationMemberRepository.update(companyUuid, logInfoDto.domainId(),
+                logInfoDto.fieldName(), updatedValue);
+            case INTEGRATION -> integrationRepository.update(companyUuid, logInfoDto.domainId(), logInfoDto.fieldName(),
+                updatedValue);
+            case COMPANY_GROUP -> companyGroupRepository.update(companyUuid, logInfoDto.domainId(),
+                logInfoDto.fieldName(), updatedValue);
+            case COMPANY -> companyRepository.update(companyUuid, logInfoDto.domainId(), logInfoDto.fieldName(),
+                updatedValue);
+            default -> throw new IllegalArgumentException(Constants.ERROR_PREFIX + "not support domain type");
+        }
+    }
+
+    private void applyDelete(String companyUuid, DomainType domainType, Long domainId) {
+        switch (domainType) {
+            case ORGANIZATION_CODE -> organizationCodeRepository.delete(companyUuid, domainId);
+            case DEPARTMENT -> departmentRepository.delete(companyUuid, domainId);
+            case USER -> userRepository.delete(companyUuid, domainId);
+            case RELATION_MEMBER -> relationMemberRepository.delete(companyUuid, domainId);
+            case INTEGRATION -> integrationRepository.delete(companyUuid, domainId);
+            case COMPANY_GROUP -> companyGroupRepository.delete(companyUuid, domainId);
+            case COMPANY -> companyRepository.delete(companyUuid, domainId);
+            default -> throw new IllegalArgumentException(Constants.ERROR_PREFIX + "not support domain type");
+        }
     }
 }
