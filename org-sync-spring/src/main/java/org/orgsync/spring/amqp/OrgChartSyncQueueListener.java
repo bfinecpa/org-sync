@@ -7,6 +7,7 @@ import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.QueueBinding;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
@@ -26,6 +27,7 @@ public class OrgChartSyncQueueListener {
             key = "${orgsync.amqp.org-chart.sync.routing-key:user_company.sync}"
 
     ))
+    @Transactional
     public void handleOrgChartSyncRequest(OrgChartSyncPayload orgChartSyncPayload) {
         if (orgChartSyncPayload == null || !StringUtils.hasText(orgChartSyncPayload.companyUuid())) {
             throw new IllegalArgumentException(ERROR_PREFIX + "companyId is required in org chart sync event");

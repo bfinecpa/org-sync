@@ -207,7 +207,7 @@ org-sync:
 
       company:
         sync-enabled: true
-        table-name: dop_company_group
+        table-name: dop_company
         fields:
           id:
             enabled: true
@@ -218,3 +218,13 @@ org-sync:
           companyGroup:
             enabled: true
             column-name: company_group_id
+      logSeq:
+        sync-enabled: true
+        table-name : dop_log_info
+        fields:
+          logSeq:
+            enabled: true
+            column-name: log_seq
+          companyId:
+            enabled: true
+            column-name: company_id

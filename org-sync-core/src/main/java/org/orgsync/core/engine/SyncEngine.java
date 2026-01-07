@@ -100,14 +100,19 @@ public class SyncEngine {
 
     private void applyDelta(String companyUuid, ProvisionSequenceDto sequenceDto) {
 
-        //TODO:companyUuid를 바탕으로 companyId 구해야 한다.
-        Long companyId = jdbcApplier.getCompanyId(companyUuid);
+        DomainSpec companySpec = domainSpecMap.get(DomainType.COMPANY);
+        String companyTableName = companySpec.getTableName();
+        Map<String, FieldSpec> fields = companySpec.getFields();
+        String companyUuidColumnName=  fields.get("companyUuid").getColumnName();
+        String companyIdColumnName=  fields.get("id").getColumnName();
+        Long companyId = jdbcApplier.getCompanyId(companyUuid, companyTableName, companyUuidColumnName, companyIdColumnName);
 
         Map<DomainKey, Object> createObjects = new HashMap<>();
         List<LogInfoDto> updateObjects = new ArrayList<>();
         Set<DomainKey> deleteObjects = new HashSet<>();
 
         List<LogInfoDto> logInfoDtos = sequenceDto.logInfoList();
+
         for (LogInfoDto logInfoDto : logInfoDtos) {
             DomainType domainType = logInfoDto.domain();
             if(domainType == null) {
@@ -140,9 +145,6 @@ public class SyncEngine {
                 } else if (object instanceof CompanyGroupDto companyGroupDto) {
                     companyGroupDto.set(logInfoDto);
                     createObjects.put(domainKey, companyGroupDto);
-                } else if (object instanceof CompanyDto companyDto) {
-                    companyDto.set(logInfoDto);
-                    createObjects.put(domainKey, companyDto);
                 }
             } else if (LogType.UPDATE.equals(logInfoDto.logType())) {
                 updateObjects.add(logInfoDto);
@@ -154,7 +156,6 @@ public class SyncEngine {
                 throw new IllegalArgumentException(Constants.ERROR_PREFIX + "not support log type");
             }
         }
-
 
         createObjects.forEach((key, value) -> {
             DomainSpec domainSpec = domainSpecMap.get(key.domainType());
@@ -189,6 +190,7 @@ public class SyncEngine {
                 return;
             }
             String idColumnName = requireIdColumnName(domainSpec, domainKey.domainType());
+            // TODO: 외래키로 연관된 데이터는 먼저 없애야 한다. interface를 만들고 라이브러리 사용자들이 구현 하도록하자.
             jdbcApplier.deleteRow(domainSpec.getTableName(), idColumnName, domainKey.domainId());
         });
 

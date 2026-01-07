@@ -2,6 +2,7 @@ package org.orgsync.core.dto;
 
 public enum DomainType {
 
+    COMPANY("회사"),
     COMPANY_GROUP("회사 그룹"),
     INTEGRATION("겸직자") ,
     DEPARTMENT("부서"),

@@ -1,5 +1,7 @@
 package org.orgsync.core.jdbc;
 
+import java.sql.ResultSet;
+import org.orgsync.core.Constants;
 import org.orgsync.core.engine.SyncResponse;
 
 import javax.sql.DataSource;
@@ -21,17 +23,35 @@ public class JdbcApplier {
         this.dataSource = Objects.requireNonNull(dataSource, "dataSource");
     }
 
-    public void applySnapshot(String companyId, SyncResponse response) {
-        // TODO: implement chunked snapshot writes and validation
-    }
 
-    public void applyDelta(String companyId, SyncResponse response) {
-        // TODO: implement upsert/delete operations and event mapping
-    }
+    public Long getCompanyId(String companyUuid, String tableName, String companyUuidColumnName, String companyIdColumnName) {
+        String sql = "SELECT " + companyIdColumnName + " FROM " + tableName + " WHERE " + companyUuidColumnName + " = ?";
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
 
+            statement.setString(1, companyUuid);
 
-    public Long getCompanyId(String companyUuid) {
-        return null;
+            try (ResultSet rs = statement.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+
+                long id = rs.getLong(1);
+                Long companyId = rs.wasNull() ? null : id;
+
+                // companyUuid가 유니크여야 정상. 여러 건이면 데이터 이상으로 보는 게 안전함.
+                if (rs.next()) {
+                    throw new IllegalStateException(
+                        Constants.ERROR_PREFIX +
+                        "Multiple rows found for companyUuid=" + companyUuid +
+                            " in " + tableName + "." + companyUuidColumnName
+                    );
+                }
+                return companyId;
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to select companyId from " + tableName, e);
+        }
     }
 
     public void insertRow(String tableName, LinkedHashMap<String, Object> columnValues) {
