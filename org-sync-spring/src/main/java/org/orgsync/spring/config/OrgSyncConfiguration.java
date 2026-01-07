@@ -3,14 +3,18 @@ package org.orgsync.spring.config;
 import org.orgsync.core.client.OrgChartClient;
 import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.event.DomainEventPublisher;
-import org.orgsync.core.jdbc.JdbcApplier;
 import org.orgsync.core.lock.LockManager;
+import org.orgsync.core.repository.CompanyGroupRepository;
+import org.orgsync.core.repository.CompanyRepository;
+import org.orgsync.core.repository.DepartmentRepository;
+import org.orgsync.core.repository.IntegrationRepository;
+import org.orgsync.core.repository.OrganizationCodeRepository;
+import org.orgsync.core.repository.RelationMemberRepository;
+import org.orgsync.core.repository.UserRepository;
 import org.orgsync.core.state.LogSeqRepository;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import javax.sql.DataSource;
 
 /**
  * Core Spring configuration that wires the sync engine and supporting components.
@@ -31,16 +35,19 @@ public class OrgSyncConfiguration {
     }
 
     @Bean
-    public JdbcApplier jdbcApplier(DataSource dataSource) {
-        return new JdbcApplier(dataSource);
-    }
-
-    @Bean
     public SyncEngine syncEngine(OrgChartClient defaultOrgChartClient,
                                  LogSeqRepository logSeqRepository,
-                                 JdbcApplier jdbcApplier,
                                  DomainEventPublisher eventPublisher,
-                                 LockManager lockManager) {
-        return new SyncEngine(defaultOrgChartClient, logSeqRepository, jdbcApplier, eventPublisher, lockManager);
+                                 LockManager lockManager,
+                                 OrganizationCodeRepository organizationCodeRepository,
+                                 DepartmentRepository departmentRepository,
+                                 UserRepository userRepository,
+                                 RelationMemberRepository relationMemberRepository,
+                                 IntegrationRepository integrationRepository,
+                                 CompanyGroupRepository companyGroupRepository,
+                                 CompanyRepository companyRepository) {
+        return new SyncEngine(defaultOrgChartClient, logSeqRepository, eventPublisher, lockManager,
+            organizationCodeRepository, departmentRepository, userRepository, relationMemberRepository,
+            integrationRepository, companyGroupRepository, companyRepository);
     }
 }

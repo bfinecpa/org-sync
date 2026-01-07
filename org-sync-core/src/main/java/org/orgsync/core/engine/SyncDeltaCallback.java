@@ -5,7 +5,7 @@ import org.orgsync.core.dto.DomainType;
 import org.orgsync.core.dto.LogInfoDto;
 
 /**
- * Callback invoked after delta operations are applied via JDBC.
+ * Callback invoked after delta operations are applied.
  */
 public interface SyncDeltaCallback {
 
