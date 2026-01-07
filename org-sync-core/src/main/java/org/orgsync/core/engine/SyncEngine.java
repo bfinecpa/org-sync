@@ -50,6 +50,7 @@ public class SyncEngine {
     private final JdbcApplier jdbcApplier;
     private final DomainEventPublisher eventPublisher;
     private final LockManager lockManager;
+    private final SyncDeltaCallback deltaCallback;
     private final Map<DomainType, DomainSpec> domainSpecMap = new HashMap<>();
     private final DomainSpec organizationCodeSpec;
 
@@ -58,11 +59,21 @@ public class SyncEngine {
                       JdbcApplier jdbcApplier,
                       DomainEventPublisher eventPublisher,
                       LockManager lockManager) {
+        this(client, logSeqRepository, jdbcApplier, eventPublisher, lockManager, SyncDeltaCallback.noop());
+    }
+
+    public SyncEngine(OrgChartClient client,
+                      LogSeqRepository logSeqRepository,
+                      JdbcApplier jdbcApplier,
+                      DomainEventPublisher eventPublisher,
+                      LockManager lockManager,
+                      SyncDeltaCallback deltaCallback) {
         this.client = Objects.requireNonNull(client, "client");
         this.logSeqRepository = Objects.requireNonNull(logSeqRepository, "logSeqRepository");
         this.jdbcApplier = Objects.requireNonNull(jdbcApplier, "jdbcApplier");
         this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher");
         this.lockManager = Objects.requireNonNull(lockManager, "lockManager");
+        this.deltaCallback = Objects.requireNonNull(deltaCallback, "deltaCallback");
         OrgSyncProperties properties = OrgSyncYamlLoader.loadFromClasspath("org-sync-spec.yml");
         this.organizationCodeSpec = properties.organizationCodeSpec()
             .orElseThrow(() -> new IllegalStateException("organization-code spec is missing"));
@@ -167,6 +178,7 @@ public class SyncEngine {
                 return;
             }
             jdbcApplier.insertRow(domainSpec.getTableName(), columnValues);
+            deltaCallback.afterCreate(companyUuid, key.domainType(), key.domainId(), columnValues, value);
         });
 
         updateObjects.forEach(logInfoDto -> {
@@ -182,6 +194,7 @@ public class SyncEngine {
             Object updatedValue = convertUpdatedValue(logInfoDto.domain(), logInfoDto);
             jdbcApplier.updateColumn(domainSpec.getTableName(), idColumnName, logInfoDto.domainId(),
                 fieldSpec.getColumnName(), updatedValue);
+            deltaCallback.afterUpdate(companyUuid, logInfoDto, updatedValue);
         });
 
         deleteObjects.forEach(domainKey -> {
@@ -192,6 +205,7 @@ public class SyncEngine {
             String idColumnName = requireIdColumnName(domainSpec, domainKey.domainType());
             // TODO: 외래키로 연관된 데이터는 먼저 없애야 한다. interface를 만들고 라이브러리 사용자들이 구현 하도록하자.
             jdbcApplier.deleteRow(domainSpec.getTableName(), idColumnName, domainKey.domainId());
+            deltaCallback.afterDelete(companyUuid, domainKey.domainType(), domainKey.domainId());
         });
 
     }
