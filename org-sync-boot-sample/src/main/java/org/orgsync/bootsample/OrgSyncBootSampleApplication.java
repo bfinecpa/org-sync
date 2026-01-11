@@ -2,7 +2,6 @@ package org.orgsync.bootsample;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.orgsync.core.client.OrgChartClient;
 import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.lock.LockManager;
 import org.orgsync.core.service.OrgSyncCompanyGroupService;
@@ -42,11 +41,6 @@ public class OrgSyncBootSampleApplication {
         InMemoryOrgSyncStore store = new InMemoryOrgSyncStore();
         store.registerCompany("sample-company");
         return store;
-    }
-
-    @Bean
-    public OrgChartClient orgChartClient() {
-        return new SampleOrgChartClient();
     }
 
     @Bean
