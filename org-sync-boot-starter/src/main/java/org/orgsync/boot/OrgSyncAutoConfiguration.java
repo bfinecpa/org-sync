@@ -1,8 +1,6 @@
 package org.orgsync.boot;
 
-import org.orgsync.core.lock.LockManager;
 import org.orgsync.spring.config.OrgSyncConfiguration;
-import org.orgsync.spring.lock.InMemoryLockManager;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -44,11 +42,5 @@ public class OrgSyncAutoConfiguration {
     @ConditionalOnProperty(prefix = "orgsync.client", name = "base-url")
     public OrgChartClient orgChartClient(RestClient restClient, OrgSyncRestClientProperties properties) {
         return new OrgChartRestClient(restClient, properties);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(LockManager.class)
-    public LockManager inMemoryLockManager() {
-        return new InMemoryLockManager();
     }
 }
