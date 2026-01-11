@@ -1,7 +1,6 @@
 package org.orgsync.bootsample;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.lock.LockManager;
 import org.orgsync.core.service.OrgSyncCompanyGroupService;
@@ -14,14 +13,12 @@ import org.orgsync.core.service.OrgSyncMultiLanguageService;
 import org.orgsync.core.service.OrgSyncOrganizationCodeService;
 import org.orgsync.core.service.OrgSyncUserGroupCodeUserService;
 import org.orgsync.core.service.OrgSyncUserService;
-import org.orgsync.spring.lock.InMemoryLockManager;
 import org.orgsync.spring.store.InMemoryOrgSyncStore;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.ResourcelessTransactionManager;
+
 
 
 @SpringBootApplication
@@ -48,15 +45,6 @@ public class OrgSyncBootSampleApplication {
         return new InMemoryLockManager();
     }
 
-    @Bean
-    public PlatformTransactionManager transactionManager() {
-        return new ResourcelessTransactionManager();
-    }
-
-    @Bean
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper();
-    }
 
     @Bean
     public OrgSyncLogSeqService orgSyncLogSeqService(InMemoryOrgSyncStore store) {
