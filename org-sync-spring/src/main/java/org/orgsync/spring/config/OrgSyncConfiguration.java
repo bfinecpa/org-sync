@@ -20,6 +20,7 @@ import org.orgsync.spring.event.SpringDomainEventPublisher;
 import org.orgsync.spring.logging.Slf4jSyncLogger;
 import org.orgsync.spring.transaction.SpringTransactionRunner;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,17 +55,33 @@ public class OrgSyncConfiguration {
                                  OrgSyncLogSeqService LogSeqService,
                                  LockManager lockManager,
                                  TransactionRunner transactionRunner,
-                                 OrgSyncOrganizationCodeService organizationCodeService,
-                                 OrgSyncDepartmentService departmentService,
-                                 OrgSyncUserService userService,
-                                 OrgSyncMemberService memberService,
-                                 OrgSyncIntegrationService integrationService,
-                                 OrgSyncCompanyGroupService companyGroupService,
+                                 ObjectProvider<OrgSyncOrganizationCodeService> organizationCodeServiceProvider,
+                                 ObjectProvider<OrgSyncDepartmentService> departmentServiceProvider,
+                                 ObjectProvider<OrgSyncUserService> userServiceProvider,
+                                 ObjectProvider<OrgSyncMemberService> memberServiceProvider,
+                                 ObjectProvider<OrgSyncIntegrationService> integrationServiceProvider,
+                                 ObjectProvider<OrgSyncCompanyGroupService> companyGroupServiceProvider,
                                  OrgSyncCompanyService companyService,
-                                 OrgSyncUserGroupCodeUserService userGroupCodeUserService,
-                                 OrgSyncMultiLanguageService multiLanguageService,
+                                 ObjectProvider<OrgSyncUserGroupCodeUserService> userGroupCodeUserServiceProvider,
+                                 ObjectProvider<OrgSyncMultiLanguageService> multiLanguageServiceProvider,
                                  ObjectMapper objectMapper,
                                  SyncLogger syncLogger) {
+        OrgSyncOrganizationCodeService organizationCodeService =
+            organizationCodeServiceProvider.getIfAvailable(() -> new OrgSyncOrganizationCodeService() {});
+        OrgSyncDepartmentService departmentService =
+            departmentServiceProvider.getIfAvailable(() -> new OrgSyncDepartmentService() {});
+        OrgSyncUserService userService =
+            userServiceProvider.getIfAvailable(() -> new OrgSyncUserService() {});
+        OrgSyncMemberService memberService =
+            memberServiceProvider.getIfAvailable(() -> new OrgSyncMemberService() {});
+        OrgSyncIntegrationService integrationService =
+            integrationServiceProvider.getIfAvailable(() -> new OrgSyncIntegrationService() {});
+        OrgSyncCompanyGroupService companyGroupService =
+            companyGroupServiceProvider.getIfAvailable(() -> new OrgSyncCompanyGroupService() {});
+        OrgSyncUserGroupCodeUserService userGroupCodeUserService =
+            userGroupCodeUserServiceProvider.getIfAvailable(() -> new OrgSyncUserGroupCodeUserService() {});
+        OrgSyncMultiLanguageService multiLanguageService =
+            multiLanguageServiceProvider.getIfAvailable(() -> new OrgSyncMultiLanguageService() {});
         return new SyncEngine(defaultOrgChartClient, LogSeqService, lockManager, transactionRunner,
             organizationCodeService, departmentService, userService, memberService,
             integrationService, companyGroupService, companyService, userGroupCodeUserService,
