@@ -255,11 +255,11 @@ public class UserSnapshotDto {
         return needOperatorAssignment;
     }
 
-    public UserDto toUserDto() {
+    public UserDto toUserDto(Long companyId) {
         EmployeeType resolvedEmployeeType = employeeType == null ? null : EmployeeType.valueOf(employeeType);
         return new UserDto(
             userId,
-            null,
+            companyId,
             name,
             employeeNumber,
             loginId,
@@ -268,7 +268,6 @@ public class UserSnapshotDto {
             needOperatorAssignment,
             directTel,
             mobileNo,
-            null,
             repTel,
             fax,
             selfInfo,

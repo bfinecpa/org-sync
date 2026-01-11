@@ -80,11 +80,11 @@ public class DepartmentSnapshotDto {
         return multiLanguageDtos;
     }
 
-    public DepartmentDto toDepartmentDto() {
+    public DepartmentDto toDepartmentDto(Long companyId) {
         DepartmentStatus departmentStatus = status == null ? null : DepartmentStatus.valueOf(status);
         return new DepartmentDto(
             deptId,
-            null,
+            companyId,
             name,
             null,
             sortOrder,

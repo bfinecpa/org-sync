@@ -57,10 +57,10 @@ public class OrganizationCodeSnapshotDto {
 
 
 
-    public OrganizationCodeDto toOrganizationCodeDto() {
+    public OrganizationCodeDto toOrganizationCodeDto(Long companyId) {
         return new OrganizationCodeDto(
             id,
-            null,
+            companyId,
             code,
             type,
             name,

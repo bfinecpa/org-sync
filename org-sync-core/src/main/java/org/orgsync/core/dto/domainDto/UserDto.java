@@ -16,7 +16,6 @@ public class UserDto {
     private Boolean needOperatorAssignment;
     private String directTel;
     private String mobileNo;
-    private String mobileSearch;
     private String repTel;
     private String fax;
     private String selfInfo;
@@ -39,7 +38,7 @@ public class UserDto {
     private Long integrationId;
 
     public UserDto(Long id, Long companyId, String name, String employeeNumber, String loginId, String locale,
-        UserStatus status, Boolean needOperatorAssignment, String directTel, String mobileNo, String mobileSearch,
+        UserStatus status, Boolean needOperatorAssignment, String directTel, String mobileNo,
         String repTel, String fax, String selfInfo, String job, String location, String homePage, String messenger,
         LocalDate birthday, boolean lunarCalendar, LocalDate anniversary, String address, String memo,
         String externalEmail,
@@ -55,7 +54,6 @@ public class UserDto {
         this.needOperatorAssignment = needOperatorAssignment;
         this.directTel = directTel;
         this.mobileNo = mobileNo;
-        this.mobileSearch = mobileSearch;
         this.repTel = repTel;
         this.fax = fax;
         this.selfInfo = selfInfo;
@@ -115,10 +113,6 @@ public class UserDto {
 
     public String getMobileNo() {
         return mobileNo;
-    }
-
-    public String getMobileSearch() {
-        return mobileSearch;
     }
 
     public String getRepTel() {
@@ -207,7 +201,7 @@ public class UserDto {
 
     public void update(
         String name, String employeeNumber, String loginId, String locale,
-        UserStatus status, Boolean needOperatorAssignment, String directTel, String mobileNo, String mobileSearch,
+        UserStatus status, Boolean needOperatorAssignment, String directTel, String mobileNo,
         String repTel, String fax, String selfInfo, String job, String location, String homePage, String messenger,
         LocalDate birthday, Boolean lunarCalendar, LocalDate anniversary, String address, String memo,
         String externalEmail, LocalDate joinDate, LocalDate recognizedJoinDate, String residentRegistrationNumber,
@@ -221,7 +215,6 @@ public class UserDto {
         this.needOperatorAssignment = needOperatorAssignment;
         this.directTel = directTel;
         this.mobileNo = mobileNo;
-        this.mobileSearch = mobileSearch;
         this.repTel = repTel;
         this.fax = fax;
         this.selfInfo = selfInfo;

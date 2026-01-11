@@ -247,7 +247,7 @@ public class SyncEngine {
 
 
         for(DepartmentSnapshotDto departmentSnapshotDto : departmentSnapshot) {
-            DepartmentDto departmentDto = departmentSnapshotDto.toDepartmentDto();
+            DepartmentDto departmentDto = departmentSnapshotDto.toDepartmentDto(companyDto.getId());
             List<MultiLanguageDto> multiLanguageDtos = departmentSnapshotDto.toMultiLanguageDtos();
             List<MultiLanguageDto> multiLanguageDtosWithValue = multiLanguageDtos.stream()
                 .filter(dto -> !dto.getValue().isEmpty())
@@ -287,7 +287,7 @@ public class SyncEngine {
         Set<Long> oldIds = userDtos.stream().map(UserDto::getId).collect(Collectors.toSet());
 
         for (UserSnapshotDto userSnapshotDto : userSnapshot) {
-            UserDto userDto = userSnapshotDto.toUserDto();
+            UserDto userDto = userSnapshotDto.toUserDto(companyDto.getId());
             List<MultiLanguageDto> multiLanguageDtos = userSnapshotDto.toMultiLanguageDtos();
             List<MultiLanguageDto> multiLanguageDtosWithValue = multiLanguageDtos.stream()
                 .filter(dto -> !dto.getValue().isEmpty())
@@ -330,7 +330,8 @@ public class SyncEngine {
 
         for (OrganizationCodeSnapshotDto organizationCodeSnapshotDto : organizationCodeSnapshot) {
             // 생성
-            OrganizationCodeDto organizationCodeDto = organizationCodeSnapshotDto.toOrganizationCodeDto();
+            OrganizationCodeDto organizationCodeDto = organizationCodeSnapshotDto.toOrganizationCodeDto(
+                companyDto.getId());
             List<MultiLanguageDto> multiLanguageDtos = organizationCodeSnapshotDto.toMultiLanguageDtos();
             List<MultiLanguageDto> multiLanguageDtosWithValue = multiLanguageDtos.stream()
                 .filter(dto -> !dto.getValue().isEmpty())
@@ -538,7 +539,6 @@ public class SyncEngine {
             deltaDto.getNeedOperatorAssignment(),
             deltaDto.getDirectTel(),
             deltaDto.getMobileNo(),
-            deltaDto.getMobileSearch(),
             deltaDto.getRepTel(),
             deltaDto.getFax(),
             deltaDto.getSelfInfo(),
@@ -701,7 +701,6 @@ public class SyncEngine {
             deltaDto.getNeedOperatorAssignment(),
             deltaDto.getDirectTel(),
             deltaDto.getMobileNo(),
-            deltaDto.getMobileSearch(),
             deltaDto.getRepTel(),
             deltaDto.getFax(),
             deltaDto.getSelfInfo(),
