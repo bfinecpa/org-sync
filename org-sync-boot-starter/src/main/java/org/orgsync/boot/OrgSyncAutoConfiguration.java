@@ -5,14 +5,14 @@ import org.orgsync.core.client.OrgChartClient;
 import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.lock.LockManager;
-import org.orgsync.core.repository.CompanyGroupRepository;
-import org.orgsync.core.repository.CompanyRepository;
-import org.orgsync.core.repository.DepartmentRepository;
-import org.orgsync.core.repository.IntegrationRepository;
-import org.orgsync.core.repository.OrganizationCodeRepository;
-import org.orgsync.core.repository.RelationMemberRepository;
-import org.orgsync.core.repository.UserRepository;
-import org.orgsync.core.state.LogSeqRepository;
+import org.orgsync.core.service.OrgSyncCompanyGroupService;
+import org.orgsync.core.service.OrgSyncCompanyService;
+import org.orgsync.core.service.OrgSyncDepartmentService;
+import org.orgsync.core.service.OrgSyncIntegrationService;
+import org.orgsync.core.service.OrgSyncOrganizationCodeService;
+import org.orgsync.core.service.OrgSyncMemberService;
+import org.orgsync.core.service.OrgSyncUserService;
+import org.orgsync.core.service.OrgSyncLogSeqService;
 import org.orgsync.spring.config.OrgSyncConfiguration;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
 import org.orgsync.spring.lock.InMemoryLockManager;
@@ -66,18 +66,18 @@ public class OrgSyncAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public SyncEngine syncEngine(OrgChartClient client,
-                                 LogSeqRepository logSeqRepository,
+                                 OrgSyncLogSeqService LogSeqService,
                                  DomainEventPublisher eventPublisher,
                                  LockManager lockManager,
-                                 OrganizationCodeRepository organizationCodeRepository,
-                                 DepartmentRepository departmentRepository,
-                                 UserRepository userRepository,
-                                 RelationMemberRepository relationMemberRepository,
-                                 IntegrationRepository integrationRepository,
-                                 CompanyGroupRepository companyGroupRepository,
-                                 CompanyRepository companyRepository) {
-        return new SyncEngine(client, logSeqRepository, eventPublisher, lockManager, organizationCodeRepository,
-            departmentRepository, userRepository, relationMemberRepository, integrationRepository,
-            companyGroupRepository, companyRepository);
+                                 OrgSyncOrganizationCodeService organizationCodeService,
+                                 OrgSyncDepartmentService departmentService,
+                                 OrgSyncUserService userService,
+                                 OrgSyncMemberService memberService,
+                                 OrgSyncIntegrationService integrationService,
+                                 OrgSyncCompanyGroupService companyGroupService,
+                                 OrgSyncCompanyService companyService) {
+        return new SyncEngine(client, LogSeqService, eventPublisher, lockManager, organizationCodeService,
+            departmentService, userService, memberService, integrationService,
+            companyGroupService, companyService);
     }
 }

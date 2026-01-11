@@ -2,7 +2,7 @@ package org.orgsync.core.engine;
 
 import java.util.Map;
 import org.orgsync.core.dto.LogInfoDto;
-import org.orgsync.core.dto.UserDto;
+import org.orgsync.core.dto.domainDto.UserDto;
 
 /**
  * Callback invoked after user delta operations are applied.

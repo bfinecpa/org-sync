@@ -5,7 +5,7 @@ import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.engine.SyncResponse;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.lock.LockManager;
-import org.orgsync.core.state.LogSeqRepository;
+import org.orgsync.core.service.OrgSyncLogSeqService;
 import org.orgsync.spring.config.OrgSyncConfiguration;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
 import org.orgsync.spring.lock.InMemoryLockManager;
@@ -37,12 +37,12 @@ public class OrgSyncSpringSample {
         }
 
         @Bean
-        public LogSeqRepository syncLogSeqRepository() {
-            return new LogSeqRepository() {
+        public OrgSyncLogSeqService syncLogSeqRepository() {
+            return new OrgSyncLogSeqService() {
                 private Long logSeq;
 
                 @Override
-                public Optional<Long> loadLogSeq(String companyUuid) {
+                public Optional<Long> getLogSeq(String companyUuid) {
                     return Optional.ofNullable(logSeq);
                 }
 

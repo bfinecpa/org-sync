@@ -5,7 +5,7 @@ import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.engine.SyncResponse;
 import org.orgsync.core.event.DomainEvent;
 import org.orgsync.core.event.DomainEventPublisher;
-import org.orgsync.core.state.LogSeqRepository;
+import org.orgsync.core.service.OrgSyncLogSeqService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -34,12 +34,12 @@ public class OrgSyncBootSampleApplication {
     }
 
     @Bean
-    LogSeqRepository syncLogSeqRepository() {
-        return new LogSeqRepository() {
+    OrgSyncLogSeqService syncLogSeqRepository() {
+        return new OrgSyncLogSeqService() {
             private Long logSeq;
 
             @Override
-            public Optional<Long> loadLogSeq(String companyUuid) {
+            public Optional<Long> getLogSeq(String companyUuid) {
                 return Optional.ofNullable(logSeq);
             }
 
