@@ -108,7 +108,7 @@ public class SyncEngine {
         this.userGroupCodeUserService = userGroupCodeUserService;
         this.multiLanguageService = multiLanguageService;
         this.objectMapper = objectMapper;
-        this.transactionRunner = transactionRunner == null ? TransactionRunner.noOp() : transactionRunner;
+        this.transactionRunner = transactionRunner;
     }
 
     public void synchronizeCompany(String companyUuid, Long logSeq) {
