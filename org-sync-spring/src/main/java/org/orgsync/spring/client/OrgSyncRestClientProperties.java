@@ -2,8 +2,8 @@ package org.orgsync.spring.client;
 
 public class OrgSyncRestClientProperties {
 
-    public static final String DEFAULT_CHANGES_PATH = "/org-sync/changes";
-    public static final String DEFAULT_SNAPSHOT_PATH = "/org-sync/snapshots/{snapshotId}";
+    public static final String DEFAULT_CHANGES_PATH = "/api/provision/common/sync/company/{companyUuid}/sequence/{logSeq}";
+    public static final String DEFAULT_SNAPSHOT_PATH = "/api/provision/common/sync/company/{companyUuid}/snapshot/{snapshotId}";
 
     private String baseUrl;
     private String changesPath = DEFAULT_CHANGES_PATH;
