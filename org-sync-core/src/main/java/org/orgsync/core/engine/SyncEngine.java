@@ -55,6 +55,7 @@ import org.orgsync.core.service.OrgSyncMemberService;
 import org.orgsync.core.service.OrgSyncUserGroupCodeUserService;
 import org.orgsync.core.service.OrgSyncUserService;
 import org.orgsync.core.service.OrgSyncLogSeqService;
+import org.orgsync.core.transaction.TransactionRunner;
 
 /**
  * Coordinates synchronization by pulling data from the org chart server and applying it
@@ -75,12 +76,24 @@ public class SyncEngine {
     private final OrgSyncUserGroupCodeUserService userGroupCodeUserService;
     private final OrgSyncMultiLanguageService multiLanguageService;
     private final ObjectMapper objectMapper;
+    private final TransactionRunner transactionRunner;
 
     public SyncEngine(OrgChartClient client, OrgSyncLogSeqService LogSeqService, LockManager lockManager,
         OrgSyncOrganizationCodeService organizationCodeService, OrgSyncDepartmentService departmentService,
         OrgSyncUserService userService, OrgSyncMemberService memberService, OrgSyncIntegrationService integrationService,
         OrgSyncCompanyGroupService companyGroupService, OrgSyncCompanyService companyService,
         OrgSyncUserGroupCodeUserService userGroupCodeUserService,
+        OrgSyncMultiLanguageService multiLanguageService, ObjectMapper objectMapper) {
+        this(client, LogSeqService, lockManager, TransactionRunner.noOp(), organizationCodeService, departmentService,
+            userService, memberService, integrationService, companyGroupService, companyService,
+            userGroupCodeUserService, multiLanguageService, objectMapper);
+    }
+
+    public SyncEngine(OrgChartClient client, OrgSyncLogSeqService LogSeqService, LockManager lockManager,
+        TransactionRunner transactionRunner, OrgSyncOrganizationCodeService organizationCodeService,
+        OrgSyncDepartmentService departmentService, OrgSyncUserService userService, OrgSyncMemberService memberService,
+        OrgSyncIntegrationService integrationService, OrgSyncCompanyGroupService companyGroupService,
+        OrgSyncCompanyService companyService, OrgSyncUserGroupCodeUserService userGroupCodeUserService,
         OrgSyncMultiLanguageService multiLanguageService, ObjectMapper objectMapper) {
         this.client = client;
         this.LogSeqService = LogSeqService;
@@ -95,6 +108,7 @@ public class SyncEngine {
         this.userGroupCodeUserService = userGroupCodeUserService;
         this.multiLanguageService = multiLanguageService;
         this.objectMapper = objectMapper;
+        this.transactionRunner = transactionRunner == null ? TransactionRunner.noOp() : transactionRunner;
     }
 
     public void synchronizeCompany(String companyUuid, Long logSeq) {
@@ -102,6 +116,10 @@ public class SyncEngine {
     }
 
     private void doSynchronize(String companyUuid, long newLogSeq) {
+        transactionRunner.run(() -> doSynchronizeInternal(companyUuid, newLogSeq));
+    }
+
+    private void doSynchronizeInternal(String companyUuid, long newLogSeq) {
         long currentLogSeq = LogSeqService.getLogSeq(companyUuid).orElse(-1L);
         if (newLogSeq <= currentLogSeq) {
             return;

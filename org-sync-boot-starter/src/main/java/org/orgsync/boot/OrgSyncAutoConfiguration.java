@@ -11,8 +11,11 @@ import org.orgsync.core.service.OrgSyncDepartmentService;
 import org.orgsync.core.service.OrgSyncIntegrationService;
 import org.orgsync.core.service.OrgSyncOrganizationCodeService;
 import org.orgsync.core.service.OrgSyncMemberService;
+import org.orgsync.core.service.OrgSyncMultiLanguageService;
+import org.orgsync.core.service.OrgSyncUserGroupCodeUserService;
 import org.orgsync.core.service.OrgSyncUserService;
 import org.orgsync.core.service.OrgSyncLogSeqService;
+import org.orgsync.core.transaction.TransactionRunner;
 import org.orgsync.spring.config.OrgSyncConfiguration;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
 import org.orgsync.spring.lock.InMemoryLockManager;
@@ -67,17 +70,20 @@ public class OrgSyncAutoConfiguration {
     @ConditionalOnMissingBean
     public SyncEngine syncEngine(OrgChartClient client,
                                  OrgSyncLogSeqService LogSeqService,
-                                 DomainEventPublisher eventPublisher,
                                  LockManager lockManager,
+                                 TransactionRunner transactionRunner,
                                  OrgSyncOrganizationCodeService organizationCodeService,
                                  OrgSyncDepartmentService departmentService,
                                  OrgSyncUserService userService,
                                  OrgSyncMemberService memberService,
                                  OrgSyncIntegrationService integrationService,
                                  OrgSyncCompanyGroupService companyGroupService,
-                                 OrgSyncCompanyService companyService) {
-        return new SyncEngine(client, LogSeqService, eventPublisher, lockManager, organizationCodeService,
+                                 OrgSyncCompanyService companyService,
+                                 OrgSyncUserGroupCodeUserService userGroupCodeUserService,
+                                 OrgSyncMultiLanguageService multiLanguageService,
+                                 com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+        return new SyncEngine(client, LogSeqService, lockManager, transactionRunner, organizationCodeService,
             departmentService, userService, memberService, integrationService,
-            companyGroupService, companyService);
+            companyGroupService, companyService, userGroupCodeUserService, multiLanguageService, objectMapper);
     }
 }
