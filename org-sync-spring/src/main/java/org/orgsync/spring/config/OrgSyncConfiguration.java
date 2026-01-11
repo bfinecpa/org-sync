@@ -10,11 +10,20 @@ import org.orgsync.core.service.OrgSyncDepartmentService;
 import org.orgsync.core.service.OrgSyncIntegrationService;
 import org.orgsync.core.service.OrgSyncOrganizationCodeService;
 import org.orgsync.core.service.OrgSyncMemberService;
+import org.orgsync.core.service.OrgSyncMultiLanguageService;
+import org.orgsync.core.service.OrgSyncUserGroupCodeUserService;
 import org.orgsync.core.service.OrgSyncUserService;
 import org.orgsync.core.service.OrgSyncLogSeqService;
+import org.orgsync.core.transaction.TransactionRunner;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
+import org.orgsync.spring.transaction.SpringTransactionRunner;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Core Spring configuration that wires the sync engine and supporting components.
@@ -23,31 +32,48 @@ import org.springframework.context.annotation.Configuration;
 public class OrgSyncConfiguration {
 
     @Bean
-    public DomainEventPublisher domainEventPublisher(org.springframework.context.ApplicationEventPublisher publisher) {
+    public DomainEventPublisher domainEventPublisher(ApplicationEventPublisher publisher) {
         return new SpringDomainEventPublisher(publisher);
     }
 
     @Bean
     public OrgChartClient defaultOrgChartClient() {
-        return (companyId, sinceCursor) -> {
-            throw new UnsupportedOperationException("OrgChartClient is not configured");
+        return new OrgChartClient() {
+            @Override
+            public org.orgsync.core.dto.ProvisionSequenceDto fetchChanges(String companyId, Long logSeq) {
+                throw new UnsupportedOperationException("OrgChartClient is not configured");
+            }
+
+            @Override
+            public org.orgsync.core.dto.snapshotDto.SnapshotDto fetchSnapshot(String companyUuid, Long snapshotId) {
+                throw new UnsupportedOperationException("OrgChartClient is not configured");
+            }
         };
+    }
+
+    @Bean
+    public TransactionRunner transactionRunner(PlatformTransactionManager transactionManager) {
+        return new SpringTransactionRunner(new TransactionTemplate(transactionManager));
     }
 
     @Bean
     public SyncEngine syncEngine(OrgChartClient defaultOrgChartClient,
                                  OrgSyncLogSeqService LogSeqService,
-                                 DomainEventPublisher eventPublisher,
                                  LockManager lockManager,
+                                 TransactionRunner transactionRunner,
                                  OrgSyncOrganizationCodeService organizationCodeService,
                                  OrgSyncDepartmentService departmentService,
                                  OrgSyncUserService userService,
                                  OrgSyncMemberService memberService,
                                  OrgSyncIntegrationService integrationService,
                                  OrgSyncCompanyGroupService companyGroupService,
-                                 OrgSyncCompanyService companyService) {
-        return new SyncEngine(defaultOrgChartClient, LogSeqService, eventPublisher, lockManager,
+                                 OrgSyncCompanyService companyService,
+                                 OrgSyncUserGroupCodeUserService userGroupCodeUserService,
+                                 OrgSyncMultiLanguageService multiLanguageService,
+                                 ObjectMapper objectMapper) {
+        return new SyncEngine(defaultOrgChartClient, LogSeqService, lockManager, transactionRunner,
             organizationCodeService, departmentService, userService, memberService,
-            integrationService, companyGroupService, companyService);
+            integrationService, companyGroupService, companyService, userGroupCodeUserService,
+            multiLanguageService, objectMapper);
     }
 }
