@@ -5,6 +5,7 @@ import org.orgsync.core.client.OrgChartClient;
 import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.lock.LockManager;
+import org.orgsync.core.logging.SyncLogger;
 import org.orgsync.core.service.OrgSyncCompanyGroupService;
 import org.orgsync.core.service.OrgSyncCompanyService;
 import org.orgsync.core.service.OrgSyncDepartmentService;
@@ -81,9 +82,11 @@ public class OrgSyncAutoConfiguration {
                                  OrgSyncCompanyService companyService,
                                  OrgSyncUserGroupCodeUserService userGroupCodeUserService,
                                  OrgSyncMultiLanguageService multiLanguageService,
-                                 com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+                                 com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+                                 SyncLogger syncLogger) {
         return new SyncEngine(client, LogSeqService, lockManager, transactionRunner, organizationCodeService,
             departmentService, userService, memberService, integrationService,
-            companyGroupService, companyService, userGroupCodeUserService, multiLanguageService, objectMapper);
+            companyGroupService, companyService, userGroupCodeUserService, multiLanguageService, objectMapper,
+            syncLogger);
     }
 }

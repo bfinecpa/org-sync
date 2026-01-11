@@ -4,6 +4,7 @@ import org.orgsync.core.client.OrgChartClient;
 import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.event.DomainEventPublisher;
 import org.orgsync.core.lock.LockManager;
+import org.orgsync.core.logging.SyncLogger;
 import org.orgsync.core.service.OrgSyncCompanyGroupService;
 import org.orgsync.core.service.OrgSyncCompanyService;
 import org.orgsync.core.service.OrgSyncDepartmentService;
@@ -16,7 +17,9 @@ import org.orgsync.core.service.OrgSyncUserService;
 import org.orgsync.core.service.OrgSyncLogSeqService;
 import org.orgsync.core.transaction.TransactionRunner;
 import org.orgsync.spring.event.SpringDomainEventPublisher;
+import org.orgsync.spring.logging.Slf4jSyncLogger;
 import org.orgsync.spring.transaction.SpringTransactionRunner;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -57,6 +60,11 @@ public class OrgSyncConfiguration {
     }
 
     @Bean
+    public SyncLogger syncLogger() {
+        return new Slf4jSyncLogger(LoggerFactory.getLogger(SyncEngine.class));
+    }
+
+    @Bean
     public SyncEngine syncEngine(OrgChartClient defaultOrgChartClient,
                                  OrgSyncLogSeqService LogSeqService,
                                  LockManager lockManager,
@@ -70,10 +78,11 @@ public class OrgSyncConfiguration {
                                  OrgSyncCompanyService companyService,
                                  OrgSyncUserGroupCodeUserService userGroupCodeUserService,
                                  OrgSyncMultiLanguageService multiLanguageService,
-                                 ObjectMapper objectMapper) {
+                                 ObjectMapper objectMapper,
+                                 SyncLogger syncLogger) {
         return new SyncEngine(defaultOrgChartClient, LogSeqService, lockManager, transactionRunner,
             organizationCodeService, departmentService, userService, memberService,
             integrationService, companyGroupService, companyService, userGroupCodeUserService,
-            multiLanguageService, objectMapper);
+            multiLanguageService, objectMapper, syncLogger);
     }
 }

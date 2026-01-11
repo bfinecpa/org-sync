@@ -45,6 +45,7 @@ import org.orgsync.core.dto.snapshotDto.UserSnapshotDto;
 import org.orgsync.core.dto.type.MultiLanguageType;
 import org.orgsync.core.dto.type.TargetDomain;
 import org.orgsync.core.lock.LockManager;
+import org.orgsync.core.logging.SyncLogger;
 import org.orgsync.core.service.OrgSyncCompanyGroupService;
 import org.orgsync.core.service.OrgSyncCompanyService;
 import org.orgsync.core.service.OrgSyncDepartmentService;
@@ -77,6 +78,7 @@ public class SyncEngine {
     private final OrgSyncMultiLanguageService multiLanguageService;
     private final ObjectMapper objectMapper;
     private final TransactionRunner transactionRunner;
+    private final SyncLogger logger;
 
     public SyncEngine(OrgChartClient client, OrgSyncLogSeqService LogSeqService, LockManager lockManager,
         OrgSyncOrganizationCodeService organizationCodeService, OrgSyncDepartmentService departmentService,
@@ -86,7 +88,7 @@ public class SyncEngine {
         OrgSyncMultiLanguageService multiLanguageService, ObjectMapper objectMapper) {
         this(client, LogSeqService, lockManager, TransactionRunner.noOp(), organizationCodeService, departmentService,
             userService, memberService, integrationService, companyGroupService, companyService,
-            userGroupCodeUserService, multiLanguageService, objectMapper);
+            userGroupCodeUserService, multiLanguageService, objectMapper, SyncLogger.noop());
     }
 
     public SyncEngine(OrgChartClient client, OrgSyncLogSeqService LogSeqService, LockManager lockManager,
@@ -95,6 +97,17 @@ public class SyncEngine {
         OrgSyncIntegrationService integrationService, OrgSyncCompanyGroupService companyGroupService,
         OrgSyncCompanyService companyService, OrgSyncUserGroupCodeUserService userGroupCodeUserService,
         OrgSyncMultiLanguageService multiLanguageService, ObjectMapper objectMapper) {
+        this(client, LogSeqService, lockManager, transactionRunner, organizationCodeService, departmentService, userService,
+            memberService, integrationService, companyGroupService, companyService, userGroupCodeUserService,
+            multiLanguageService, objectMapper, SyncLogger.noop());
+    }
+
+    public SyncEngine(OrgChartClient client, OrgSyncLogSeqService LogSeqService, LockManager lockManager,
+        TransactionRunner transactionRunner, OrgSyncOrganizationCodeService organizationCodeService,
+        OrgSyncDepartmentService departmentService, OrgSyncUserService userService, OrgSyncMemberService memberService,
+        OrgSyncIntegrationService integrationService, OrgSyncCompanyGroupService companyGroupService,
+        OrgSyncCompanyService companyService, OrgSyncUserGroupCodeUserService userGroupCodeUserService,
+        OrgSyncMultiLanguageService multiLanguageService, ObjectMapper objectMapper, SyncLogger logger) {
         this.client = client;
         this.LogSeqService = LogSeqService;
         this.lockManager = lockManager;
@@ -109,6 +122,7 @@ public class SyncEngine {
         this.multiLanguageService = multiLanguageService;
         this.objectMapper = objectMapper;
         this.transactionRunner = transactionRunner;
+        this.logger = logger == null ? SyncLogger.noop() : logger;
     }
 
     public void synchronizeCompany(String companyUuid, Long logSeq) {
@@ -122,17 +136,24 @@ public class SyncEngine {
     private void doSynchronizeInternal(String companyUuid, long newLogSeq) {
         long currentLogSeq = LogSeqService.getLogSeq(companyUuid).orElse(-1L);
         if (newLogSeq <= currentLogSeq) {
+            logger.info("Skip sync. companyUuid=" + companyUuid + ", newLogSeq=" + newLogSeq
+                + ", currentLogSeq=" + currentLogSeq);
             return;
         }
 
+        logger.info("Start sync. companyUuid=" + companyUuid + ", newLogSeq=" + newLogSeq
+            + ", currentLogSeq=" + currentLogSeq);
         ProvisionSequenceDto response = client.fetchChanges(companyUuid, currentLogSeq);
 
         if (response.needSnapshot()) {
+            logger.info("Apply snapshot. companyUuid=" + companyUuid + ", logSeq=" + response.logSeq());
             applySnapshot(companyUuid, response);
+            logger.info("Snapshot applied. companyUuid=" + companyUuid + ", logSeq=" + response.logSeq());
             return;
         }
 
         applyDelta(companyUuid, currentLogSeq, response);
+        logger.info("Delta applied. companyUuid=" + companyUuid + ", logSeq=" + response.logSeq());
     }
 
     private void applyDelta(String companyUuid, long currentLogSeq, ProvisionSequenceDto response) {
@@ -149,6 +170,8 @@ public class SyncEngine {
 
             // 진행이 없으면(같거나 감소) 무한루프/서버버그/데이터꼬임 가능성 → 즉시 실패로 드러내기
             if (nextCursor <= lastCursor) {
+                logger.error("Non-increasing logSeq. companyUuid=" + companyUuid +
+                    ", lastCursor=" + lastCursor + ", nextCursor=" + nextCursor, null);
                 throw new IllegalStateException(Constants.ERROR_PREFIX +
                     "Non-increasing logSeq. companyUuid=" + companyUuid +
                         ", lastCursor=" + lastCursor + ", nextCursor=" + nextCursor
