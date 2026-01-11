@@ -37,21 +37,6 @@ public class OrgSyncConfiguration {
     }
 
     @Bean
-    public OrgChartClient defaultOrgChartClient() {
-        return new OrgChartClient() {
-            @Override
-            public org.orgsync.core.dto.ProvisionSequenceDto fetchChanges(String companyId, Long logSeq) {
-                throw new UnsupportedOperationException("OrgChartClient is not configured");
-            }
-
-            @Override
-            public org.orgsync.core.dto.snapshotDto.SnapshotDto fetchSnapshot(String companyUuid, Long snapshotId) {
-                throw new UnsupportedOperationException("OrgChartClient is not configured");
-            }
-        };
-    }
-
-    @Bean
     public TransactionRunner transactionRunner(PlatformTransactionManager transactionManager) {
         return new SpringTransactionRunner(new TransactionTemplate(transactionManager));
     }
