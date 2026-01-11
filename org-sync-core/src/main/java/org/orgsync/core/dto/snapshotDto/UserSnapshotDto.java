@@ -10,6 +10,7 @@ import org.orgsync.core.dto.domainDto.MultiLanguageDto;
 import org.orgsync.core.dto.type.MultiLanguageType;
 import org.orgsync.core.dto.type.TargetDomain;
 import org.orgsync.core.dto.domainDto.UserDto;
+import org.orgsync.core.dto.type.EmployeeType;
 import org.orgsync.core.dto.type.UserStatus;
 
 public class UserSnapshotDto {
@@ -255,8 +256,39 @@ public class UserSnapshotDto {
     }
 
     public UserDto toUserDto() {
-        //todo: dto 생성
-        return null;
+        EmployeeType resolvedEmployeeType = employeeType == null ? null : EmployeeType.valueOf(employeeType);
+        return new UserDto(
+            userId,
+            null,
+            name,
+            employeeNumber,
+            loginId,
+            locale,
+            status,
+            needOperatorAssignment,
+            directTel,
+            mobileNo,
+            null,
+            repTel,
+            fax,
+            selfInfo,
+            job,
+            location,
+            homePage,
+            messenger,
+            birthday,
+            lunarBirthday,
+            anniversary,
+            address,
+            memo,
+            externalEmail,
+            joinDate,
+            null,
+            residentRegistrationNumber,
+            resolvedEmployeeType,
+            positionId,
+            gradeId
+        );
     }
 
     public List<MultiLanguageDto> toMultiLanguageDtos() {
