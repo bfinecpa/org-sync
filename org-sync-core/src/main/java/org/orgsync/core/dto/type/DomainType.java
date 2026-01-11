@@ -32,7 +32,7 @@ public enum DomainType {
                 case USER -> MULTI_LANGUAGE_USER;
                 case DEPARTMENT -> MULTI_LANGUAGE_DEPARTMENT;
                 case ORGANIZATION_CODE -> MULTI_LANGUAGE_ORGANIZATION_CODE;
-                default -> throw new IllegalArgumentException(Constants.ERROR_PREFIX + "Not support multi language domain type: " + domain);
+                default -> throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "Not support multi language domain type: " + domain);
             };
         }
         return domain;

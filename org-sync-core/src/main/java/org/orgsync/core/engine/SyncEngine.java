@@ -81,28 +81,6 @@ public class SyncEngine {
     private final SyncLogger logger;
 
     public SyncEngine(OrgChartClient client, OrgSyncLogSeqService LogSeqService, LockManager lockManager,
-        OrgSyncOrganizationCodeService organizationCodeService, OrgSyncDepartmentService departmentService,
-        OrgSyncUserService userService, OrgSyncMemberService memberService, OrgSyncIntegrationService integrationService,
-        OrgSyncCompanyGroupService companyGroupService, OrgSyncCompanyService companyService,
-        OrgSyncUserGroupCodeUserService userGroupCodeUserService,
-        OrgSyncMultiLanguageService multiLanguageService, ObjectMapper objectMapper) {
-        this(client, LogSeqService, lockManager, TransactionRunner.noOp(), organizationCodeService, departmentService,
-            userService, memberService, integrationService, companyGroupService, companyService,
-            userGroupCodeUserService, multiLanguageService, objectMapper, SyncLogger.noop());
-    }
-
-    public SyncEngine(OrgChartClient client, OrgSyncLogSeqService LogSeqService, LockManager lockManager,
-        TransactionRunner transactionRunner, OrgSyncOrganizationCodeService organizationCodeService,
-        OrgSyncDepartmentService departmentService, OrgSyncUserService userService, OrgSyncMemberService memberService,
-        OrgSyncIntegrationService integrationService, OrgSyncCompanyGroupService companyGroupService,
-        OrgSyncCompanyService companyService, OrgSyncUserGroupCodeUserService userGroupCodeUserService,
-        OrgSyncMultiLanguageService multiLanguageService, ObjectMapper objectMapper) {
-        this(client, LogSeqService, lockManager, transactionRunner, organizationCodeService, departmentService, userService,
-            memberService, integrationService, companyGroupService, companyService, userGroupCodeUserService,
-            multiLanguageService, objectMapper, SyncLogger.noop());
-    }
-
-    public SyncEngine(OrgChartClient client, OrgSyncLogSeqService LogSeqService, LockManager lockManager,
         TransactionRunner transactionRunner, OrgSyncOrganizationCodeService organizationCodeService,
         OrgSyncDepartmentService departmentService, OrgSyncUserService userService, OrgSyncMemberService memberService,
         OrgSyncIntegrationService integrationService, OrgSyncCompanyGroupService companyGroupService,
@@ -126,43 +104,45 @@ public class SyncEngine {
     }
 
     public void synchronizeCompany(String companyUuid, Long logSeq) {
+        info(companyUuid, "Start lock. logSeq :" + logSeq);
         lockManager.withLock(companyUuid, () -> doSynchronize(companyUuid, logSeq));
+        info(companyUuid, "End lock . logSeq :" + logSeq);
+
     }
 
-    private void doSynchronize(String companyUuid, long newLogSeq) {
-        transactionRunner.run(() -> doSynchronizeInternal(companyUuid, newLogSeq));
+    private void doSynchronize(String companyUuid, long logSeq) {
+        info(companyUuid, "Start transaction. logSeq :" + logSeq);
+        transactionRunner.run(() -> doSynchronizeInternal(companyUuid, logSeq));
+        info(companyUuid, "End transaction. logSeq :" + logSeq);
     }
 
     private void doSynchronizeInternal(String companyUuid, long newLogSeq) {
+        info(companyUuid, "Start sync. logSeq :" + newLogSeq);
         long currentLogSeq = LogSeqService.getLogSeq(companyUuid).orElse(-1L);
         if (newLogSeq <= currentLogSeq) {
-            logger.info("Skip sync. companyUuid=" + companyUuid + ", newLogSeq=" + newLogSeq
-                + ", currentLogSeq=" + currentLogSeq);
+            info(companyUuid, "Skip sync. , newLogSeq=" + newLogSeq + ", currentLogSeq=" + currentLogSeq);
             return;
         }
 
-        logger.info("Start sync. companyUuid=" + companyUuid + ", newLogSeq=" + newLogSeq
-            + ", currentLogSeq=" + currentLogSeq);
         ProvisionSequenceDto response = client.fetchChanges(companyUuid, currentLogSeq);
 
         if (response.needSnapshot()) {
-            logger.info("Apply snapshot. companyUuid=" + companyUuid + ", logSeq=" + response.logSeq());
             applySnapshot(companyUuid, response);
-            logger.info("Snapshot applied. companyUuid=" + companyUuid + ", logSeq=" + response.logSeq());
             return;
         }
 
-        applyDelta(companyUuid, currentLogSeq, response);
-        logger.info("Delta applied. companyUuid=" + companyUuid + ", logSeq=" + response.logSeq());
+        applyLogInfos(companyUuid, currentLogSeq, response);
     }
 
-    private void applyDelta(String companyUuid, long currentLogSeq, ProvisionSequenceDto response) {
+    private void applyLogInfos(String companyUuid, long currentLogSeq, ProvisionSequenceDto response) {
+        info(companyUuid, "Apply delta. logSeq :" + currentLogSeq);
         long lastCursor = currentLogSeq;
 
         while (true) {
-            applyDelta(companyUuid, response);
+            applyLogInfos(companyUuid, response.logInfoList(), response.logSeq());
 
             if (!response.needUpdateNextLog()) {
+                info(companyUuid, "Delta applied. lastLogSeq: " + lastCursor);
                 return;
             }
 
@@ -170,12 +150,8 @@ public class SyncEngine {
 
             // 진행이 없으면(같거나 감소) 무한루프/서버버그/데이터꼬임 가능성 → 즉시 실패로 드러내기
             if (nextCursor <= lastCursor) {
-                logger.error("Non-increasing logSeq. companyUuid=" + companyUuid +
-                    ", lastCursor=" + lastCursor + ", nextCursor=" + nextCursor, null);
-                throw new IllegalStateException(Constants.ERROR_PREFIX +
-                    "Non-increasing logSeq. companyUuid=" + companyUuid +
-                        ", lastCursor=" + lastCursor + ", nextCursor=" + nextCursor
-                );
+                error(companyUuid, "Non-increasing logSeq. lastCursor=" + lastCursor + ", nextCursor=" + nextCursor, null);
+                throw new IllegalStateException(Constants.ORG_SYNC_PREFIX + "Non-increasing logSeq.");
             }
 
             lastCursor = nextCursor;
@@ -186,8 +162,10 @@ public class SyncEngine {
     private void applySnapshot(String companyUuid, ProvisionSequenceDto sequenceDto) {
         // 스냅샷 데이터로부터 저장
         CompanyDto companyDto = companyService.findByUuid(companyUuid);
-        for (Long snapshotId : sequenceDto.snapshotIdList()) {
+        Long lastLogSeq = sequenceDto.logSeq();
 
+        for (Long snapshotId : sequenceDto.snapshotIdList()) {
+            info(companyUuid, "Apply snapshot. snapshotId=" + snapshotId);
             SnapshotDto snapshotDto = client.fetchSnapshot(companyUuid, snapshotId);
             compareCompanyGroup(snapshotDto.getCompanyGroupSnapshot(), companyDto);
             compareIntegration(snapshotDto.getIntegrationSnapshot(), companyDto);
@@ -196,7 +174,11 @@ public class SyncEngine {
             compareDepartment(snapshotDto.getDepartmentSnapshot(), companyDto);
             compareDepartmentMember(snapshotDto.getRelationSnapshot(), companyDto);
             LogSeqService.saveLogSeq(companyDto.getId(), snapshotDto.getLogSeq());
+            lastLogSeq = snapshotDto.getLogSeq();
+            info(companyUuid, "Snapshot applied. snapshotId=" + snapshotId + ", lastLogSeq=" + lastLogSeq);
         }
+        ProvisionSequenceDto response = client.fetchChanges(companyUuid, lastLogSeq);
+        applyLogInfos(companyUuid, lastLogSeq, response);
     }
 
     private void compareDepartmentMember(List<TreeSnapshotDto> relationSnapshot, CompanyDto companyDto) {
@@ -214,14 +196,17 @@ public class SyncEngine {
         for (MemberDto snapshotMemberDto : snapshotMemberDtos) {
             if (!oldIds.contains(snapshotMemberDto.getId())) {
                 memberService.create(snapshotMemberDto);
+                info(companyDto.getUuid(), "create member. id: " + snapshotMemberDto.getId());
             }
             else {
                 memberService.update(snapshotMemberDto);
+                info(companyDto.getUuid(), "updated member. id: " + snapshotMemberDto.getId());
             }
         }
         for (MemberDto memberDto : memberDtos) {
             if (!newIds.contains(memberDto.getId())) {
                 memberService.delete(memberDto.getId());
+                info(companyDto.getUuid(), "delete member. id: " + memberDto.getId());
             }
         }
 
@@ -254,6 +239,7 @@ public class SyncEngine {
 
                 departmentDto.updateParentId(parentId);
                 departmentService.updateParentId(departmentDto);
+                info(companyDto.getUuid(), "update department. id: " + departmentDto.getId() + "parentId: " + parentId);
             }
         }
     }
@@ -284,10 +270,12 @@ public class SyncEngine {
             if (!oldIds.contains(departmentDto.getId())) {
                 departmentService.create(departmentDto);
                 multiLanguageService.create(multiLanguageDtosWithValue);
+                info(companyDto.getUuid(), "create department. id: " + departmentDto.getId());
             }else {
                 departmentService.update(departmentDto);
                 multiLanguageService.update(multiLanguageDtosWithValue);
                 multiLanguageService.delete(multiLanguageDtosWithoutValue);
+                info(companyDto.getUuid(), "update department. id: " + departmentDto.getId());
             }
         }
 
@@ -295,6 +283,7 @@ public class SyncEngine {
             if (!newIds.contains(departmentDto.getId())) {
                 departmentService.delete(departmentDto.getId());
                 multiLanguageService.delete(departmentDto.getId(), TargetDomain.DEPARTMENT);
+                info(companyDto.getUuid(), "delete department. id: " + departmentDto.getId());
             }
         }
     }
@@ -324,11 +313,13 @@ public class SyncEngine {
                 userService.create(userDto);
                 multiLanguageService.create(multiLanguageDtosWithValue);
                 // userGroupUser 스냅샷에서는 이거 구현 못한다. 대형 사고다.
+                info(companyDto.getUuid(), "create user. id: " + userDto.getId());
             }else {
                 // 업데이트
                 userService.update(userDto);
                 multiLanguageService.update(multiLanguageDtosWithValue);
                 multiLanguageService.delete(multiLanguageDtosWithoutValue);
+                info(companyDto.getUuid(), "update user. id: " + userDto.getId());
             }
         }
 
@@ -337,6 +328,7 @@ public class SyncEngine {
                 //삭제
                 userService.delete(userDto.getId());
                 multiLanguageService.delete(userDto.getId(), TargetDomain.USER);
+                info(companyDto.getUuid(), "delete user. id: " + userDto.getId());
             }
         }
     }
@@ -367,11 +359,14 @@ public class SyncEngine {
             if (!oldIds.contains(organizationCodeSnapshotDto.getId())) {
                  organizationCodeService.create(organizationCodeDto);
                  multiLanguageService.create(multiLanguageDtosWithValue);
+                info(companyDto.getUuid(), "create organization. id: " + organizationCodeDto.getId());
+
             }else {
                 // 업데이트
                 organizationCodeService.update(organizationCodeDto);
                 multiLanguageService.update(multiLanguageDtosWithValue);
                 multiLanguageService.delete(multiLanguageDtosWithoutValue);
+                info(companyDto.getUuid(), "update organization. id: " + organizationCodeDto.getId());
             }
         }
 
@@ -380,6 +375,7 @@ public class SyncEngine {
                 // 삭제
                 organizationCodeService.delete(organizationCodeDto.getId());
                 multiLanguageService.delete(organizationCodeDto.getId(), TargetDomain.DEPARTMENT);
+                info(companyDto.getUuid(), "delete organization. id: " + organizationCodeDto.getId());
             }
         }
     }
@@ -396,10 +392,9 @@ public class SyncEngine {
 
         for (IntegrationSnapshotDto integrationSnapshotDto : integrationSnapshot) {
             if (!oldIds.contains(integrationSnapshotDto.getId())) {
-                // 새로 만들 것
                 IntegrationDto integrationDto = new IntegrationDto(integrationSnapshotDto.getId());
                 integrationService.create(integrationDto);
-
+                info(companyDto.getUuid(), "create integration. id: " + integrationDto.getId());
                 UserDto userDto = userService.findByCompanyIdAndUserIds(companyDto.getId(),
                     integrationSnapshotDto.getUserIdList());
 
@@ -408,44 +403,76 @@ public class SyncEngine {
                 }
                 userDto.updateIntegrationId(integrationDto.getId());
                 userService.updateIntegration(userDto);
+                info(companyDto.getUuid(), "update integration. user id: " + userDto.getId() +  " integration id: " + integrationDto.getId());
             }
         }
 
-        // 지워야 하는데
         for (IntegrationDto integrationDto : integrationDtos) {
             if (!newIds.contains(integrationDto.getId())) {
-                integrationService.delete(integrationDto.getId());
+
+                UserDto userDto = userService.findByCompanyIdAndIntegrationId(companyDto.getId(),
+                    integrationDto.getId());
+                if (userDto == null) {
+                    continue;
+                }
+                userDto.updateIntegrationId(null);
+                userService.updateIntegration(userDto);
+                info(companyDto.getUuid(), "update integration. user id: " + userDto.getId() +  " integration id: null");
+
+                if (userService.existsByIntegrationId(integrationDto.getId())) {
+                    integrationService.delete(integrationDto.getId());
+                    info(companyDto.getUuid(), "delete integration. id: " + integrationDto.getId());
+                }
             }
         }
     }
 
     private void compareCompanyGroup(List<CompanyGroupSnapshotDto> companyGroupSnapshot, CompanyDto companyDto) {
-        CompanyGroupDto companyGroupDto =  companyGroupService.findByCompanyId(companyDto.getId());
-        if (companyGroupSnapshot == null ||  companyGroupSnapshot.isEmpty()) {
-            if (companyGroupDto != null && companyGroupDto.getId() != null) {
+        if (companyGroupSnapshot != null && !companyGroupSnapshot.isEmpty()) {
+            CompanyGroupSnapshotDto companyGroupSnapshotDto = companyGroupSnapshot.get(0);
+            CompanyGroupDto companyGroupDto = companyGroupService.findById(companyGroupSnapshotDto.getId());
+            if (companyGroupDto == null) {
+                companyGroupDto = new CompanyGroupDto(companyGroupSnapshotDto.getId());
+                companyGroupService.create(companyGroupDto);
+                info(companyDto.getUuid(), "create company group. id: " + companyGroupDto.getId());
+            }
+
+            if (companyDto.getCompanyGroupId() == null) {
+                companyDto.updateCompanyGroupId(companyGroupDto.getId());
+                companyService.updateCompanyGroupId(companyDto);
+                info(companyDto.getUuid(), "update company group. company id: " + companyDto.getId() + " company group: " + companyGroupDto.getId());
+            }else if (!companyDto.getCompanyGroupId().equals(companyGroupDto.getId())) {
+                companyDto.updateCompanyGroupId(companyGroupDto.getId());
+                companyService.updateCompanyGroupId(companyDto);
+                info(companyDto.getUuid(), "update company group. company id: " + companyDto.getId() + " company group: " + companyGroupDto.getId());
+            }
+        }else {
+            if (companyDto.getCompanyGroupId() != null) {
                 companyDto.updateCompanyGroupId(null);
                 companyService.updateCompanyGroupId(companyDto);
+                info(companyDto.getUuid(), "update company group. company id: " + companyDto.getId() + " company group: null");
             }
-            return;
-        }
 
-        CompanyGroupSnapshotDto companyGroupSnapshotDto = companyGroupSnapshot.get(0);
-        companyDto.updateCompanyGroupId(companyGroupSnapshotDto.getId());
+            if (companyService.existsByCompanyGroupId(companyDto.getCompanyGroupId())) {
+                companyGroupService.delete(companyDto.getCompanyGroupId());
+                info(companyDto.getUuid(), "delete company group. id: " + companyDto.getCompanyGroupId());
+            }
+        }
     }
 
-    private void applyDelta(String companyUuid, ProvisionSequenceDto sequenceDto) {
+    private void applyLogInfos(String companyUuid, List<LogInfoDto> logInfoDtos, Long logSeq) {
+        info(companyUuid, "Apply logInfos. logSeq :" + logSeq);
         CompanyDto companyDto = companyService.findByUuid(companyUuid);
 
         Map<DomainKey, Settable> createObjects = new HashMap<>();
         Map<DomainKey, Settable> updateObjects = new HashMap<>();
         Set<DomainKey> deleteObjects = new HashSet<>();
 
-        List<LogInfoDto> logInfoDtos = sequenceDto.logInfoList();
 
         for (LogInfoDto logInfoDto : logInfoDtos) {
             DomainType domainType = logInfoDto.domain();
             if(domainType == null) {
-                throw new IllegalArgumentException(Constants.ERROR_PREFIX + "can not find domain type");
+                throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "can not find domain type");
             }
             if (LogType.CREATE.equals(logInfoDto.logType())) {
                 createDomainDto(logInfoDto, domainType, createObjects);
@@ -454,15 +481,16 @@ public class SyncEngine {
             } else if (LogType.DELETE.equals(logInfoDto.logType())) {
                 deleteDomainDto(logInfoDto, domainType, deleteObjects);
             } else {
-                throw new IllegalArgumentException(Constants.ERROR_PREFIX + "not support log type");
+                throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "not support log type");
             }
         }
 
         createObjects.forEach((key, value) -> applyCreate(key.domainType(), value, companyDto));
         updateObjects.forEach((key, value) -> applyUpdate(key.domainType(), value, companyDto));
-        deleteObjects.forEach(domainKey -> applyDelete(domainKey.domainType(), domainKey.domainId()));
+        deleteObjects.forEach(domainKey -> applyDelete(domainKey.domainType(), domainKey.domainId(), companyDto));
 
-        LogSeqService.saveLogSeq(companyDto.getId(), sequenceDto.logSeq());
+        LogSeqService.saveLogSeq(companyDto.getId(), logSeq);
+        info(companyUuid, "LogInfos applied. logSeq :" + logSeq);
     }
 
     private static void deleteDomainDto(LogInfoDto logInfoDto, DomainType domainType, Set<DomainKey> deleteObjects) {
@@ -488,7 +516,7 @@ public class SyncEngine {
             }
         }
         if (object == null) {
-            throw new IllegalArgumentException(Constants.ERROR_PREFIX + "can not found object for domain type. domain key " + domainKey);
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "can not found object for domain type. domain key " + domainKey);
         }
         object.set(logInfoDto);
         updateObjects.put(domainKey, object);
@@ -510,7 +538,7 @@ public class SyncEngine {
             case RELATION_MEMBER -> new MemberDeltaDto(domainId);
             case INTEGRATION -> new IntegrationDeltaDto(domainId);
             case COMPANY_GROUP -> new CompanyGroupDeltaDto(domainId);
-            default -> throw new IllegalStateException(Constants.ERROR_PREFIX + "Unexpected value: " + domainType);
+            default -> throw new IllegalStateException(Constants.ORG_SYNC_PREFIX + "Unexpected value: " + domainType);
         };
     }
 
@@ -520,24 +548,26 @@ public class SyncEngine {
             case ORGANIZATION_CODE -> createOrganizationCOde((OrganizationCodeDeltaDto) dto, companyDto);
             case DEPARTMENT -> createDepartment((DepartmentDeltaDto) dto, companyDto);
             case USER -> createUser((UserDeltaDto) dto, companyDto);
-            case RELATION_MEMBER -> createMember((MemberDeltaDto) dto);
-            case INTEGRATION -> createIntegration((IntegrationDeltaDto) dto);
-            case COMPANY_GROUP -> createCompanyGroup((CompanyGroupDeltaDto) dto);
-            default -> throw new IllegalArgumentException(Constants.ERROR_PREFIX + "not support domain type in applyCreate");
+            case RELATION_MEMBER -> createMember((MemberDeltaDto) dto, companyDto);
+            case INTEGRATION -> createIntegration((IntegrationDeltaDto) dto, companyDto);
+            case COMPANY_GROUP -> createCompanyGroup((CompanyGroupDeltaDto) dto, companyDto);
+            default -> throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "not support domain type in applyCreate");
         }
     }
 
-    private void createCompanyGroup(CompanyGroupDeltaDto deltaDto) {
+    private void createCompanyGroup(CompanyGroupDeltaDto deltaDto, CompanyDto companyDto) {
         CompanyGroupDto companyGroupDto = new CompanyGroupDto(deltaDto.getId());
         companyGroupService.create(companyGroupDto);
+        info(companyDto.getUuid(), "create company group. id: " + deltaDto.getId());
     }
 
-    private void createIntegration(IntegrationDeltaDto deltaDto) {
+    private void createIntegration(IntegrationDeltaDto deltaDto, CompanyDto companyDto) {
         IntegrationDto integrationDto = new IntegrationDto(deltaDto.getId());
         integrationService.create(integrationDto);
+        info(companyDto.getUuid(), "create integration. id: " + deltaDto.getId());
     }
 
-    private void createMember(MemberDeltaDto deltaDto) {
+    private void createMember(MemberDeltaDto deltaDto, CompanyDto companyDto) {
         MemberDto memberDto = new MemberDto(
             deltaDto.getId(),
             deltaDto.getUserId(),
@@ -548,6 +578,7 @@ public class SyncEngine {
             deltaDto.getDepartmentOrder()
         );
         memberService.create(memberDto);
+        info(companyDto.getUuid(), "create member. id: " + deltaDto.getId());
     }
 
     private void createUser(UserDeltaDto deltaDto, CompanyDto companyDto) {
@@ -598,6 +629,8 @@ public class SyncEngine {
         if (!multiLanguageDtosWithValue.isEmpty()) {
             multiLanguageService.create(multiLanguageDtosWithValue);
         }
+
+        info(companyDto.getUuid(), "create user. id: " + deltaDto.getId());
     }
 
     private void createDepartment(DepartmentDeltaDto deltaDto, CompanyDto companyDto) {
@@ -624,6 +657,8 @@ public class SyncEngine {
         if (!multiLanguageDtosWithValue.isEmpty()) {
             multiLanguageService.create(multiLanguageDtosWithValue);
         }
+
+        info(companyDto.getUuid(), "create department. id: " + deltaDto.getId());
     }
 
     private void createOrganizationCOde(OrganizationCodeDeltaDto deltaDto, CompanyDto companyDto) {
@@ -644,17 +679,18 @@ public class SyncEngine {
         if (!multiLanguageDtosWithValue.isEmpty()) {
             multiLanguageService.create(multiLanguageDtosWithValue);
         }
+        info(companyDto.getUuid(), "create organization code. id: " + deltaDto.getId());
     }
 
     private void applyUpdate(DomainType domainType, Settable dto, CompanyDto companyDto) {
         switch (domainType) {
-            case ORGANIZATION_CODE -> updateOrganization((OrganizationCodeDeltaDto) dto);
-            case DEPARTMENT -> updateDepartment((DepartmentDeltaDto) dto);
-            case USER -> updateUser((UserDeltaDto) dto);
-            case RELATION_MEMBER -> updateMember((MemberDeltaDto) dto);
+            case ORGANIZATION_CODE -> updateOrganization((OrganizationCodeDeltaDto) dto, companyDto);
+            case DEPARTMENT -> updateDepartment((DepartmentDeltaDto) dto, companyDto);
+            case USER -> updateUser((UserDeltaDto) dto, companyDto);
+            case RELATION_MEMBER -> updateMember((MemberDeltaDto) dto, companyDto);
             case INTEGRATION -> updateIntegration((IntegrationDeltaDto) dto, companyDto);
             case COMPANY_GROUP -> updateCompanyGroup((CompanyGroupDeltaDto) dto, companyDto);
-            default -> throw new IllegalArgumentException(Constants.ERROR_PREFIX + "not support domain type in applyUpdate");
+            default -> throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "not support domain type in applyUpdate");
         }
     }
 
@@ -662,14 +698,17 @@ public class SyncEngine {
         if (companyDto.getCompanyGroupId() == null) {
             companyDto.updateCompanyGroupId(deltaDto.getId());
             companyService.updateCompanyGroupId(companyDto);
+            info(companyDto.getUuid(), "update company group. id: " + deltaDto.getId());
         }else {
             String companyUuids = deltaDto.getCompanyUuids();
             List<String> uuids = getList(companyUuids);
             if (!uuids.contains(companyDto.getId())) {
                 companyDto.updateCompanyGroupId(null);
                 companyService.updateCompanyGroupId(companyDto);
+                info(companyDto.getUuid(), "update company group. id: " + deltaDto.getId());
                 if (companyService.existsByCompanyGroupId(deltaDto.getId())) {
                     companyGroupService.delete(deltaDto.getId());
+                    info(companyDto.getUuid(), "delete company group. id: " + deltaDto.getId());
                 }
             }
         }
@@ -684,19 +723,21 @@ public class SyncEngine {
                 userIds);
             userDto.updateIntegrationId(null);
             userService.updateIntegration(userDto);
+            info(companyDto.getUuid(), "update integration. id: " + deltaDto.getId());
 
             if (userService.existsByIntegrationId(deltaDto.getId())) {
                 integrationService.delete(deltaDto.getId());
+                info(companyDto.getUuid(), "delete integration. id: " + deltaDto.getId());
             }
-
         }else if (!userIds.isEmpty() && userDto == null){
             userDto.updateIntegrationId(deltaDto.getId());
             userService.updateIntegration(userDto);
+            info(companyDto.getUuid(), "update integration. id: " + deltaDto.getId());
         }
         // 값이 한번에 바뀌는 경우가 존재할까?
     }
 
-    private void updateMember(MemberDeltaDto deltaDto) {
+    private void updateMember(MemberDeltaDto deltaDto, CompanyDto companyDto) {
         MemberDto memberDto = memberService.findById(deltaDto.getId());
         if (memberDto == null) {
             return;
@@ -706,9 +747,10 @@ public class SyncEngine {
             deltaDto.getDutyCode(),
             deltaDto.getMemberType(), deltaDto.getSortOrder(), deltaDto.getDepartmentOrder());
         memberService.update(memberDto);
+        info(companyDto.getUuid(), "update member. id: " + deltaDto.getId());
     }
 
-    private void updateUser(UserDeltaDto deltaDto) {
+    private void updateUser(UserDeltaDto deltaDto, CompanyDto companyDto) {
         UserDto userDto = userService.findById(deltaDto.getId());
 
         if (userDto == null) {
@@ -774,9 +816,10 @@ public class SyncEngine {
                 userGroupCodeUserService.create(new UserGroupUserDto(userDto.getId(), userGroupCodeId));
             }
         }
+        info(companyDto.getUuid(), "update user. id: " + deltaDto.getId());
     }
 
-    private void updateDepartment(DepartmentDeltaDto deltaDto) {
+    private void updateDepartment(DepartmentDeltaDto deltaDto, CompanyDto companyDto) {
         DepartmentDto departmentDto = departmentService.findById(deltaDto.getId());
 
         if (departmentDto == null) {
@@ -815,9 +858,10 @@ public class SyncEngine {
                 multiLanguageService.delete(multiLanguageDtosWithoutValue);
             }
         }
+        info(companyDto.getUuid(), "update department. id: " + deltaDto.getId());
     }
 
-    private void updateOrganization(OrganizationCodeDeltaDto deltaDto) {
+    private void updateOrganization(OrganizationCodeDeltaDto deltaDto, CompanyDto companyDto) {
         OrganizationCodeDto organizationCodeDto = organizationCodeService.findById(deltaDto.getId());
 
         organizationCodeDto.update(
@@ -850,24 +894,32 @@ public class SyncEngine {
                 multiLanguageService.delete(multiLanguageDtosWithoutValue);
             }
         }
+
+        info(companyDto.getUuid(), "update organization code. id: " + deltaDto.getId());
     }
 
-    private void applyDelete(DomainType domainType, Long domainId) {
+    private void applyDelete(DomainType domainType, Long domainId, CompanyDto companyDto) {
         switch (domainType) {
             case ORGANIZATION_CODE -> {
                 organizationCodeService.delete(domainId);
                 multiLanguageService.delete(domainId, TargetDomain.ORGANIZATION_CODE);
+                info(companyDto.getUuid(), "delete organization code. id: " + domainId);
             }
             case DEPARTMENT -> {
                 departmentService.delete(domainId);
                 multiLanguageService.delete(domainId, TargetDomain.DEPARTMENT);
+                info(companyDto.getUuid(), "delete department. id: " + domainId);
             }
             case USER -> {
                 userService.delete(domainId);
                 multiLanguageService.delete(domainId, TargetDomain.USER);
+                info(companyDto.getUuid(), "delete user. id: " + domainId);
             }
-            case RELATION_MEMBER -> memberService.delete(domainId);
-            default -> throw new IllegalArgumentException(Constants.ERROR_PREFIX + "not support domain type in applyDelete");
+            case RELATION_MEMBER -> {
+                memberService.delete(domainId);
+                info(companyDto.getUuid(), "delete member. id: " + domainId);
+            }
+            default -> throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "not support domain type in applyDelete");
         }
     }
 
@@ -876,7 +928,7 @@ public class SyncEngine {
            return objectMapper.readValue(list, new TypeReference<>() {
            });
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(Constants.ERROR_PREFIX + "Error parsing integration updated value", e);
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "Error parsing integration updated value", e);
         }
     }
 
@@ -894,11 +946,23 @@ public class SyncEngine {
                 multiLanguageDtos.add(new MultiLanguageDto(domainId, targetDomain, multiLanguageType, value));
             }
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(Constants.ERROR_PREFIX+"error parsing json in MultiLanguageUtils", e);
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX +"error parsing json in MultiLanguageUtils", e);
         }
         return multiLanguageDtos;
     }
 
 
+
+    private void info(String companyUuid, String message) {
+        logger.info(Constants.ORG_SYNC_LOG_PREFIX + companyUuid + ", message: " + message);
+    }
+
+    private void warn(String companyUuid, String message) {
+        logger.warn(Constants.ORG_SYNC_LOG_PREFIX + companyUuid + ", message: " + message);
+    }
+
+    private void error(String companyUuid, String message, Exception e) {
+        logger.error(Constants.ORG_SYNC_LOG_PREFIX + companyUuid + ", message: " + message, e);
+    }
 
 }

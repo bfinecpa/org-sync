@@ -67,7 +67,7 @@ public class DepartmentDeltaDto implements Settable {
     @Override
     public void set(LogInfoDto logInfoDto) {
         if (logInfoDto == null) {
-            throw new IllegalArgumentException(Constants.ERROR_PREFIX + "logInfoDto is null in DepartmentDto");
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "logInfoDto is null in DepartmentDto");
         }
 
         Object updatedValue = logInfoDto.updatedValue();

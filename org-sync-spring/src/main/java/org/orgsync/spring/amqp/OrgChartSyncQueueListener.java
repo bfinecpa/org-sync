@@ -1,6 +1,6 @@
 package org.orgsync.spring.amqp;
 
-import static org.orgsync.core.Constants.ERROR_PREFIX;
+import static org.orgsync.core.Constants.ORG_SYNC_PREFIX;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.orgsync.core.engine.SyncEngine;
@@ -32,11 +32,11 @@ public class OrgChartSyncQueueListener {
     public void handleOrgChartSyncRequest(Object payload) {
         OrgChartSyncPayload orgChartSyncPayload = resolvePayload(payload);
         if (orgChartSyncPayload == null || !StringUtils.hasText(orgChartSyncPayload.companyUuid())) {
-            throw new IllegalArgumentException(ERROR_PREFIX + "companyUuid is required in org chart sync event");
+            throw new IllegalArgumentException(ORG_SYNC_PREFIX + "companyUuid is required in org chart sync event");
         }
 
         if (orgChartSyncPayload.logSeq() == null) {
-            throw new IllegalArgumentException(ERROR_PREFIX + "logSeq is required in org chart sync event");
+            throw new IllegalArgumentException(ORG_SYNC_PREFIX + "logSeq is required in org chart sync event");
         }
 
         syncEngine.synchronizeCompany(orgChartSyncPayload.companyUuid(), orgChartSyncPayload.logSeq());
@@ -80,7 +80,7 @@ public class OrgChartSyncQueueListener {
             return objectMapper.readValue(rawPayload, OrgChartSyncPayload.class);
         }
         catch (Exception ex) {
-            throw new IllegalArgumentException(ERROR_PREFIX + "Unable to parse org chart sync payload", ex);
+            throw new IllegalArgumentException(ORG_SYNC_PREFIX + "Unable to parse org chart sync payload", ex);
         }
     }
 
@@ -99,7 +99,7 @@ public class OrgChartSyncQueueListener {
             return objectMapper.convertValue(payload, OrgChartSyncPayload.class);
         }
         catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException(ERROR_PREFIX + "Unable to convert org chart sync payload", ex);
+            throw new IllegalArgumentException(ORG_SYNC_PREFIX + "Unable to convert org chart sync payload", ex);
         }
     }
 }

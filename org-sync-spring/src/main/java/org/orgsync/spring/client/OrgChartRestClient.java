@@ -21,7 +21,7 @@ public class OrgChartRestClient implements OrgChartClient {
 
     public OrgChartRestClient(RestClient restClient, String changesPath, String snapshotPath) {
         if (restClient == null) {
-            throw new IllegalArgumentException(Constants.ERROR_PREFIX + "RestClient is required");
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "RestClient is required");
         }
         this.restClient = restClient;
         this.changesPath = normalizePath(changesPath, OrgSyncRestClientProperties.DEFAULT_CHANGES_PATH);
@@ -31,7 +31,7 @@ public class OrgChartRestClient implements OrgChartClient {
     @Override
     public ProvisionSequenceDto fetchChanges(String companyUuid, Long logSeq) {
         if (!StringUtils.hasText(companyUuid)) {
-            throw new IllegalArgumentException(Constants.ERROR_PREFIX + "companyUuid is required for change fetch");
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "companyUuid is required for change fetch");
         }
 
         ProvisionSequenceDto response = restClient.get()
@@ -40,7 +40,7 @@ public class OrgChartRestClient implements OrgChartClient {
             .body(ProvisionSequenceDto.class);
 
         if (response == null) {
-            throw new IllegalStateException(Constants.ERROR_PREFIX + "No response from org chart server");
+            throw new IllegalStateException(Constants.ORG_SYNC_PREFIX + "No response from org chart server");
         }
 
         return response;
@@ -49,10 +49,10 @@ public class OrgChartRestClient implements OrgChartClient {
     @Override
     public SnapshotDto fetchSnapshot(String companyUuid, Long snapshotId) {
         if (!StringUtils.hasText(companyUuid)) {
-            throw new IllegalArgumentException(Constants.ERROR_PREFIX + "companyUuid is required for snapshot fetch");
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "companyUuid is required for snapshot fetch");
         }
         if (snapshotId == null) {
-            throw new IllegalArgumentException(Constants.ERROR_PREFIX + "snapshotId is required for snapshot fetch");
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "snapshotId is required for snapshot fetch");
         }
 
         SnapshotDto response = restClient.get()
@@ -61,7 +61,7 @@ public class OrgChartRestClient implements OrgChartClient {
             .body(SnapshotDto.class);
 
         if (response == null) {
-            throw new IllegalStateException(Constants.ERROR_PREFIX + "No snapshot response from org chart server");
+            throw new IllegalStateException(Constants.ORG_SYNC_PREFIX + "No snapshot response from org chart server");
         }
 
         return response;

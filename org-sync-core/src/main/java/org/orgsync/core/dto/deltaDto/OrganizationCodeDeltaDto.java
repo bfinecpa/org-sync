@@ -44,7 +44,7 @@ public class OrganizationCodeDeltaDto implements Settable {
     @Override
     public void set(LogInfoDto logInfoDto) {
         if (logInfoDto == null) {
-            throw new IllegalArgumentException(Constants.ERROR_PREFIX + "logInfoDto is null in OrganizationCodeDto");
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "logInfoDto is null in OrganizationCodeDto");
         }
 
         String fieldName = logInfoDto.fieldName();
