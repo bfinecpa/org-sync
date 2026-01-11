@@ -58,8 +58,14 @@ public class OrganizationCodeSnapshotDto {
 
 
     public OrganizationCodeDto toOrganizationCodeDto() {
-        //TODO: DTO 생성
-        return null;
+        return new OrganizationCodeDto(
+            id,
+            null,
+            code,
+            type,
+            name,
+            sortOrder
+        );
     }
 
     public List<MultiLanguageDto> toMultiLanguageDtos() {

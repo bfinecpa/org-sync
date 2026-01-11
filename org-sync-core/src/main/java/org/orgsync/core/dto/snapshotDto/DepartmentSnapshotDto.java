@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import org.orgsync.core.dto.domainDto.DepartmentDto;
 import org.orgsync.core.dto.domainDto.MultiLanguageDto;
+import org.orgsync.core.dto.type.DepartmentStatus;
 import org.orgsync.core.dto.type.MultiLanguageType;
 import org.orgsync.core.dto.type.TargetDomain;
 
@@ -80,9 +81,19 @@ public class DepartmentSnapshotDto {
     }
 
     public DepartmentDto toDepartmentDto() {
-        //todo: dto 생성
-        return null;
+        DepartmentStatus departmentStatus = status == null ? null : DepartmentStatus.valueOf(status);
+        return new DepartmentDto(
+            deptId,
+            null,
+            name,
+            null,
+            sortOrder,
+            code,
+            alias,
+            email,
+            departmentStatus,
+            departmentPath
+        );
     }
 }
-
 
