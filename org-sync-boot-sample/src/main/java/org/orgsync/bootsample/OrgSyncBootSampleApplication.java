@@ -1,10 +1,9 @@
 package org.orgsync.bootsample;
 
 
-import org.orgsync.core.engine.SyncEngine;
 import org.orgsync.core.lock.LockManager;
 import org.orgsync.bootsample.store.jpa.OrgSyncJpaStoreConfiguration;
-import org.springframework.boot.CommandLineRunner;
+import org.orgsync.spring.lock.InMemoryLockManager;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -24,10 +23,10 @@ public class OrgSyncBootSampleApplication {
         SpringApplication.run(OrgSyncBootSampleApplication.class, args);
     }
 
-    @Bean
-    CommandLineRunner runSync(SyncEngine syncEngine) {
-        return args -> syncEngine.synchronizeCompany("sample-company", 0L);
-    }
+//    @Bean
+//    CommandLineRunner runSync(SyncEngine syncEngine) {
+//        return args -> syncEngine.synchronizeCompany("sample-company", 0L);
+//    }
 
     @Bean
     public LockManager lockManager() {

@@ -1,4 +1,4 @@
-package org.orgsync.bootsample;
+package org.orgsync.spring.lock;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
