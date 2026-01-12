@@ -3,7 +3,9 @@ package org.orgsync.spring.amqp;
 import static org.orgsync.core.Constants.ORG_SYNC_PREFIX;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
 import org.orgsync.core.engine.SyncEngine;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.QueueBinding;
@@ -53,6 +55,22 @@ public class OrgChartSyncQueueListener {
         if (payload instanceof OrgChartSyncMessage orgChartSyncMessage) {
             return orgChartSyncMessage.messagePayload();
         }
+
+        if (payload instanceof Message amqpMessage) {
+            byte[] body = amqpMessage.getBody();
+            if (body == null || body.length == 0) {
+                return null;
+            }
+            return readPayload(new String(body, StandardCharsets.UTF_8));
+        }
+
+        if (payload instanceof byte[] rawBytes) {
+            if (rawBytes.length == 0) {
+                return null;
+            }
+            return readPayload(new String(rawBytes, StandardCharsets.UTF_8));
+        }
+
 
         if (payload instanceof String rawPayload) {
             return readPayload(rawPayload);

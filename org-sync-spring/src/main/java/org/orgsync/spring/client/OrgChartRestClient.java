@@ -35,7 +35,7 @@ public class OrgChartRestClient implements OrgChartClient {
         }
 
         ProvisionSequenceDto response = restClient.get()
-            .uri(uriBuilder -> buildChangesUri(uriBuilder, companyUuid, logSeq))
+            .uri(uriBuilder -> uriBuilder.path(changesPath).build(companyUuid, logSeq))
             .retrieve()
             .body(ProvisionSequenceDto.class);
 
@@ -56,7 +56,7 @@ public class OrgChartRestClient implements OrgChartClient {
         }
 
         SnapshotDto response = restClient.get()
-            .uri(uriBuilder -> buildSnapshotUri(uriBuilder, companyUuid, snapshotId))
+            .uri(uriBuilder -> uriBuilder.path(snapshotPath).build(companyUuid, snapshotId))
             .retrieve()
             .body(SnapshotDto.class);
 
@@ -65,26 +65,6 @@ public class OrgChartRestClient implements OrgChartClient {
         }
 
         return response;
-    }
-
-    private URI buildChangesUri(UriBuilder uriBuilder, String companyUuid, Long logSeq) {
-        UriBuilder builder = uriBuilder.path(changesPath)
-            .queryParam("companyUuid", companyUuid);
-        if (logSeq != null) {
-            builder = builder.queryParam("logSeq", logSeq);
-        }
-        return builder.build();
-    }
-
-    private URI buildSnapshotUri(UriBuilder uriBuilder, String companyUuid, Long snapshotId) {
-        UriBuilder builder = uriBuilder.path(snapshotPath)
-            .queryParam("companyUuid", companyUuid);
-
-        if (snapshotPath.contains("{snapshotId}")) {
-            return builder.build(snapshotId);
-        }
-
-        return builder.queryParam("snapshotId", snapshotId).build();
     }
 
     private String normalizePath(String candidate, String fallback) {
