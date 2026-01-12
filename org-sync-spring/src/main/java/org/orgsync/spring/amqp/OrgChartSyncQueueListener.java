@@ -24,12 +24,11 @@ public class OrgChartSyncQueueListener {
     }
 
     @RabbitListener(bindings = @QueueBinding(
-            value = @Queue("${orgsync.amqp.org-chart.sync.queue:orgsync.org-chart.sync.queue}"),
-            exchange = @Exchange("${orgsync.amqp.org-chart.sync.exchange:dop_user_company_sync}"),
-            key = "${orgsync.amqp.org-chart.sync.routing-key:user_company.sync}"
-
+        value = @Queue(value = "orgsync.org-chart.sync.queue", durable = "true"),
+        exchange = @Exchange(value = "dop_user_company_sync.fanout", type = "fanout", durable = "true")
     ))
     public void handleOrgChartSyncRequest(Object payload) {
+        System.out.println("OrgChartSyncQueueListener received org-sync request: " + payload);
         OrgChartSyncPayload orgChartSyncPayload = resolvePayload(payload);
         if (orgChartSyncPayload == null || !StringUtils.hasText(orgChartSyncPayload.companyUuid())) {
             throw new IllegalArgumentException(ORG_SYNC_PREFIX + "companyUuid is required in org chart sync event");
