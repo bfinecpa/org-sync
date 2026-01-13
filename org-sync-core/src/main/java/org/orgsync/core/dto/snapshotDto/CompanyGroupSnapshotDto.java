@@ -6,9 +6,22 @@ public class CompanyGroupSnapshotDto {
 
     private Long id;
 
+    private List<String> companyUuidList;
+
+    public CompanyGroupSnapshotDto() {
+    }
+
+    public CompanyGroupSnapshotDto(Long id, List<String> companyUuidList) {
+        this.id = id;
+        this.companyUuidList = companyUuidList;
+    }
+
     public Long getId() {
         return id;
     }
 
-    private List<String> companyUuidList;
+
+    public List<String> getCompanyUuidList() {
+        return companyUuidList;
+    }
 }

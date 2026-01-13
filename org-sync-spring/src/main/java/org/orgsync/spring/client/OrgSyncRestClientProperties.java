@@ -6,7 +6,7 @@ public class OrgSyncRestClientProperties {
 
     public static final String DEFAULT_CHANGES_PATH = "/api/provision/common/sync/company/{companyUuid}/sequence/{logSeq}";
     public static final String DEFAULT_SNAPSHOT_PATH = "/api/provision/common/sync/company/{companyUuid}/snapshot/{snapshotId}";
-    public static final String LOCAL_BASE_URL = "http://localhost:8888";
+    public static final String LOCAL_BASE_URL = "http://localhost:8080";
     public static final String DEFAULT_BASE_URL = "http://dop-service-gateway.dop-platform.svc.cluster.local:20719";
 
     private static final String LOCAL_PROFILE = "local";
@@ -19,7 +19,8 @@ public class OrgSyncRestClientProperties {
         if (baseUrl != null && !baseUrl.isBlank()) {
             return baseUrl;
         }
-        return isLocalProfileActive() ? LOCAL_BASE_URL : DEFAULT_BASE_URL;
+        String baseUrl = isLocalProfileActive() ? LOCAL_BASE_URL : DEFAULT_BASE_URL;
+        return baseUrl;
     }
 
     public void setBaseUrl(String baseUrl) {

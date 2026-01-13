@@ -21,3 +21,6 @@ spring:
     virtual-host: /
     username: orgsync
     password: 12341234
+
+server:
+  port: 8081

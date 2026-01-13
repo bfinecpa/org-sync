@@ -45,4 +45,20 @@ public class SnapshotDto {
     public List<TreeSnapshotDto> getRelationSnapshot() {
         return relationSnapshot;
     }
+
+    public SnapshotDto() {
+    }
+
+    public SnapshotDto(Long logSeq, List<CompanyGroupSnapshotDto> companyGroupSnapshot,
+        List<IntegrationSnapshotDto> integrationSnapshot, List<OrganizationCodeSnapshotDto> organizationCodeSnapshot,
+        List<UserSnapshotDto> userSnapshot, List<DepartmentSnapshotDto> departmentSnapshot,
+        List<TreeSnapshotDto> relationSnapshot) {
+        this.logSeq = logSeq;
+        this.companyGroupSnapshot = companyGroupSnapshot;
+        this.integrationSnapshot = integrationSnapshot;
+        this.organizationCodeSnapshot = organizationCodeSnapshot;
+        this.userSnapshot = userSnapshot;
+        this.departmentSnapshot = departmentSnapshot;
+        this.relationSnapshot = relationSnapshot;
+    }
 }

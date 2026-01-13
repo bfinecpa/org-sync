@@ -9,6 +9,13 @@ public class IntegrationSnapshotDto {
 
     private List<Long> userIdList;
 
+    public IntegrationSnapshotDto() {
+    }
+
+    public IntegrationSnapshotDto(Long id, List<Long> userIdList) {
+        this.id = id;
+        this.userIdList = userIdList;
+    }
 
     public Long getId() {
         return id;

@@ -16,6 +16,18 @@ public class TreeSnapshotDto {
 
     private Boolean isDeleted;
 
+    public TreeSnapshotDto() {
+    }
+
+    public TreeSnapshotDto(Long id, Boolean isRoot, List<TreeDepartmentNodeSnapshotDto> childDepartments,
+        List<TreeMemberNodeSnapshotDto> childMembers, Boolean isDeleted) {
+        this.id = id;
+        this.isRoot = isRoot;
+        this.childDepartments = childDepartments;
+        this.childMembers = childMembers;
+        this.isDeleted = isDeleted;
+    }
+
     public Stream<MemberDto> toMemberDto() {
         return childMembers.stream().map(dto -> dto.toMemberDto(this.id));
     }
@@ -36,7 +48,7 @@ public class TreeSnapshotDto {
         return childMembers;
     }
 
-    public Boolean getDeleted() {
+    public Boolean getIsDeleted() {
         return isDeleted;
     }
 }

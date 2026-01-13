@@ -1,5 +1,6 @@
 package org.orgsync.bootsample.store.jpa.service;
 
+import java.util.List;
 import org.orgsync.bootsample.store.jpa.entity.UserGroupUserEntity;
 import org.orgsync.bootsample.store.jpa.entity.UserGroupUserId;
 import org.orgsync.bootsample.store.jpa.repository.UserGroupUserRepository;
@@ -28,5 +29,18 @@ public class JpaOrgSyncUserGroupCodeUserService implements OrgSyncUserGroupCodeU
     @Override
     public void deleteByUserId(Long id) {
         userGroupUserRepository.deleteByIdUserId(id);
+    }
+
+
+    @Override
+    public List<UserGroupUserDto> findByUserId(Long id) {
+        return userGroupUserRepository.findByIdUserId(id).stream()
+            .map(entity -> new UserGroupUserDto(entity.getId().getUserId(), entity.getId().getUserGroupId()))
+            .toList();
+    }
+
+    @Override
+    public void deleteByUserIdAndUserGroupCodeId(Long userId, Long userGroupCodeId) {
+        userGroupUserRepository.deleteByIdUserIdAndIdUserGroupId(userId, userGroupCodeId);
     }
 }

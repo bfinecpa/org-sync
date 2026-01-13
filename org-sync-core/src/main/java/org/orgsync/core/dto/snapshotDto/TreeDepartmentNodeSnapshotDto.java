@@ -20,6 +20,20 @@ public class TreeDepartmentNodeSnapshotDto {
 
     private ZonedDateTime deletedAt;
 
+    public TreeDepartmentNodeSnapshotDto() {
+    }
+
+    public TreeDepartmentNodeSnapshotDto(Long id, String name, Map<MultiLanguageType, String> multiLanguageMap,
+        int sortOrder, String email, Boolean isDeleted, ZonedDateTime deletedAt) {
+        this.id = id;
+        this.name = name;
+        this.multiLanguageMap = multiLanguageMap;
+        this.sortOrder = sortOrder;
+        this.email = email;
+        this.isDeleted = isDeleted;
+        this.deletedAt = deletedAt;
+    }
+
     public Long getId() {
         return id;
     }

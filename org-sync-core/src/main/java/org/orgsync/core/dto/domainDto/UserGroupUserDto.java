@@ -1,5 +1,7 @@
 package org.orgsync.core.dto.domainDto;
 
+import java.util.Objects;
+
 /**
  * id가 없는 이유는 현재 프로비저닝 스펙으로 id가 없이 내려갑니다.
  */

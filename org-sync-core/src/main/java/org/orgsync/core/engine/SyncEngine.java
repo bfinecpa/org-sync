@@ -24,6 +24,7 @@ import org.orgsync.core.dto.domainDto.CompanyGroupDto;
 import org.orgsync.core.dto.domainDto.DepartmentDto;
 import org.orgsync.core.dto.DomainKey;
 import org.orgsync.core.dto.domainDto.UserGroupUserDto;
+import org.orgsync.core.dto.snapshotDto.UserGroupSnapshotDto;
 import org.orgsync.core.dto.type.DomainType;
 import org.orgsync.core.dto.domainDto.IntegrationDto;
 import org.orgsync.core.dto.LogInfoDto;
@@ -221,7 +222,7 @@ public class SyncEngine {
 
 
         for (TreeSnapshotDto treeSnapshotDto : relationSnapshot) {
-            if (treeSnapshotDto.getDeleted()){
+            if (treeSnapshotDto.getIsDeleted()){
                 continue;
             }
 
@@ -312,13 +313,40 @@ public class SyncEngine {
                 // 생성
                 userService.create(userDto);
                 multiLanguageService.create(multiLanguageDtosWithValue);
-                // userGroupUser 스냅샷에서는 이거 구현 못한다. 대형 사고다.
+                for (UserGroupSnapshotDto userGroupSnapshotDto : userSnapshotDto.getUserGroupList()) {
+                    UserGroupUserDto userGroupUserDto = new UserGroupUserDto(userSnapshotDto.getUserId(),
+                        userGroupSnapshotDto.getId());
+                    userGroupCodeUserService.create(userGroupUserDto);
+                }
                 info(companyDto.getUuid(), "create user. id: " + userDto.getId());
             }else {
                 // 업데이트
                 userService.update(userDto);
                 multiLanguageService.update(multiLanguageDtosWithValue);
                 multiLanguageService.delete(multiLanguageDtosWithoutValue);
+
+                Set<Long> oldUserGroupCodeIds = userGroupCodeUserService.findByUserId(userDto.getId())
+                    .stream()
+                    .map(UserGroupUserDto::getUserGroupId)
+                    .collect(Collectors.toSet());
+
+                Set<Long> newUserGroupCodeIds = userSnapshotDto.getUserGroupList()
+                    .stream()
+                    .map(UserGroupSnapshotDto::getId)
+                    .collect(Collectors.toSet());
+
+                for (Long newUserGroupCodeId : newUserGroupCodeIds) {
+                    if (!oldUserGroupCodeIds.contains(newUserGroupCodeId)) {
+                        userGroupCodeUserService.create(new UserGroupUserDto(userDto.getId(), newUserGroupCodeId));
+                    }
+                }
+
+                for (Long oldUserGroupCodeId : oldUserGroupCodeIds) {
+                    if (!newUserGroupCodeIds.contains(oldUserGroupCodeId)) {
+                        userGroupCodeUserService.deleteByUserIdAndUserGroupCodeId(userDto.getId(), oldUserGroupCodeId);
+                    }
+                }
+
                 info(companyDto.getUuid(), "update user. id: " + userDto.getId());
             }
         }
@@ -328,6 +356,7 @@ public class SyncEngine {
                 //삭제
                 userService.delete(userDto.getId());
                 multiLanguageService.delete(userDto.getId(), TargetDomain.USER);
+                userGroupCodeUserService.deleteByUserId(userDto.getId());
                 info(companyDto.getUuid(), "delete user. id: " + userDto.getId());
             }
         }

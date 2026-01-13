@@ -32,6 +32,24 @@ public class DepartmentSnapshotDto {
 
     private String status;
 
+    public DepartmentSnapshotDto() {
+    }
+
+    public DepartmentSnapshotDto(Long deptId, String name, Map<MultiLanguageType, String> multiLanguageMap,
+        int sortOrder,
+        String code, String alias, String email, Boolean isDeleted, String departmentPath, String status) {
+        this.deptId = deptId;
+        this.name = name;
+        this.multiLanguageMap = multiLanguageMap;
+        this.sortOrder = sortOrder;
+        this.code = code;
+        this.alias = alias;
+        this.email = email;
+        this.isDeleted = isDeleted;
+        this.departmentPath = departmentPath;
+        this.status = status;
+    }
+
     public Long getDeptId() {
         return deptId;
     }

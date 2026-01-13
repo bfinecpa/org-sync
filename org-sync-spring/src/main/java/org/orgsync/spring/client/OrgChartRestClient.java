@@ -7,7 +7,6 @@ import org.orgsync.core.dto.snapshotDto.SnapshotDto;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriBuilder;
 
 public class OrgChartRestClient implements OrgChartClient {
 

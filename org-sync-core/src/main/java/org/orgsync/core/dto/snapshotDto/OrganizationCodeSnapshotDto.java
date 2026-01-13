@@ -30,6 +30,8 @@ public class OrganizationCodeSnapshotDto {
         this.multiLanguageMap = multiLanguageMap;
     }
 
+    public OrganizationCodeSnapshotDto() {
+    }
 
     public Long getId() {
         return id;

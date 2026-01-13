@@ -94,6 +94,60 @@ public class UserSnapshotDto {
 
     private Boolean needOperatorAssignment;
 
+    public UserSnapshotDto() {
+    }
+
+    public UserSnapshotDto(Long userId, ZonedDateTime createdAt, ZonedDateTime updatedAt, Long repId, String name,
+        String employeeNumber, String loginId, String locale, UserStatus status, ZonedDateTime deletedAt,
+        ZonedDateTime dormantAt, Map<MultiLanguageType, String> multiLanguageMap, List<Long> departmentIds,
+        String position,
+        Long positionId, String grade, Long gradeId, List<UserGroupSnapshotDto> userGroupList, String directTel,
+        String mobileNo, String repTel, String fax, String selfInfo, String job, String location, String homePage,
+        String messenger, LocalDate birthday, boolean lunarBirthday, LocalDate anniversary, String address, String memo,
+        String externalEmail, LocalDate expiredDate, LocalDate joinDate, LocalDate resignationDate,
+        String residentRegistrationNumber, String employeeType, String profileImagePath,
+        Boolean needOperatorAssignment) {
+        this.userId = userId;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.repId = repId;
+        this.name = name;
+        this.employeeNumber = employeeNumber;
+        this.loginId = loginId;
+        this.locale = locale;
+        this.status = status;
+        this.deletedAt = deletedAt;
+        this.dormantAt = dormantAt;
+        this.multiLanguageMap = multiLanguageMap;
+        this.departmentIds = departmentIds;
+        this.position = position;
+        this.positionId = positionId;
+        this.grade = grade;
+        this.gradeId = gradeId;
+        this.userGroupList = userGroupList;
+        this.directTel = directTel;
+        this.mobileNo = mobileNo;
+        this.repTel = repTel;
+        this.fax = fax;
+        this.selfInfo = selfInfo;
+        this.job = job;
+        this.location = location;
+        this.homePage = homePage;
+        this.messenger = messenger;
+        this.birthday = birthday;
+        this.lunarBirthday = lunarBirthday;
+        this.anniversary = anniversary;
+        this.address = address;
+        this.memo = memo;
+        this.externalEmail = externalEmail;
+        this.expiredDate = expiredDate;
+        this.joinDate = joinDate;
+        this.resignationDate = resignationDate;
+        this.residentRegistrationNumber = residentRegistrationNumber;
+        this.employeeType = employeeType;
+        this.profileImagePath = profileImagePath;
+        this.needOperatorAssignment = needOperatorAssignment;
+    }
 
     public Long getUserId() {
         return userId;
