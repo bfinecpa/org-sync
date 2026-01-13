@@ -207,32 +207,86 @@ public class UserDto {
         String externalEmail, LocalDate joinDate, LocalDate recognizedJoinDate, String residentRegistrationNumber,
         EmployeeType employeeType, Long positionCodeId, Long gradeCodeId
     ) {
-        this.name = name;
-        this.employeeNumber = employeeNumber;
-        this.loginId = loginId;
-        this.locale = locale;
-        this.status = status;
-        this.needOperatorAssignment = needOperatorAssignment;
-        this.directTel = directTel;
-        this.mobileNo = mobileNo;
-        this.repTel = repTel;
-        this.fax = fax;
-        this.selfInfo = selfInfo;
-        this.job = job;
-        this.location = location;
-        this.homePage = homePage;
-        this.messenger = messenger;
-        this.birthday = birthday;
-        this.lunarCalendar = lunarCalendar;
-        this.anniversary = anniversary;
-        this.address = address;
-        this.memo = memo;
-        this.externalEmail = externalEmail;
-        this.joinDate = joinDate;
-        this.recognizedJoinDate = recognizedJoinDate;
-        this.residentRegistrationNumber = residentRegistrationNumber;
-        this.employeeType = employeeType;
-        this.positionCodeId = positionCodeId;
-        this.gradeCodeId = gradeCodeId;
+        if (name != null) {
+            this.name = name;
+        }
+        if (employeeNumber != null) {
+            this.employeeNumber = employeeNumber;
+        }
+        if (loginId != null) {
+            this.loginId = loginId;
+        }
+        if (locale != null) {
+            this.locale = locale;
+        }
+        if (status != null) {
+            this.status = status;
+        }
+        if (needOperatorAssignment != null) {
+            this.needOperatorAssignment = needOperatorAssignment;
+        }
+        if (directTel != null) {
+            this.directTel = directTel;
+        }
+        if (mobileNo != null) {
+            this.mobileNo = mobileNo;
+        }
+        if (repTel != null) {
+            this.repTel = repTel;
+        }
+        if (fax != null) {
+            this.fax = fax;
+        }
+        if (selfInfo != null) {
+            this.selfInfo = selfInfo;
+        }
+        if (job != null) {
+            this.job = job;
+        }
+        if (location != null) {
+            this.location = location;
+        }
+        if (homePage != null) {
+            this.homePage = homePage;
+        }
+        if (messenger != null) {
+            this.messenger = messenger;
+        }
+        if (birthday != null) {
+            this.birthday = birthday;
+        }
+        if (lunarCalendar != null) {
+            this.lunarCalendar = lunarCalendar;
+        }
+        if (anniversary != null) {
+            this.anniversary = anniversary;
+        }
+        if (address != null) {
+            this.address = address;
+        }
+        if (memo != null) {
+            this.memo = memo;
+        }
+        if (externalEmail != null) {
+            this.externalEmail = externalEmail;
+        }
+        if (joinDate != null) {
+            this.joinDate = joinDate;
+        }
+        if (recognizedJoinDate != null) {
+            this.recognizedJoinDate = recognizedJoinDate;
+        }
+        if (residentRegistrationNumber != null) {
+            this.residentRegistrationNumber = residentRegistrationNumber;
+        }
+        if (employeeType != null) {
+            this.employeeType = employeeType;
+        }
+        if (positionCodeId != null) {
+            this.positionCodeId = positionCodeId;
+        }
+        if (gradeCodeId != null) {
+            this.gradeCodeId = gradeCodeId;
+        }
     }
 }
