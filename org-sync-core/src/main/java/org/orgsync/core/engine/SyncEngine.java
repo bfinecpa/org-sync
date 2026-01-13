@@ -551,10 +551,7 @@ public class SyncEngine {
                 createObjects.put(domainKey, object);
             }
         }else {
-            Settable object = applyFind(domainType, domainId);
-            if (object == null) {
-                throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "can not found object for domain type. domain key " + domainKey);
-            }
+            Settable object = instantiateDto(domainType, domainId);
             if (DomainType.COMPANY_GROUP.equals(domainType)) {
                 CompanyGroupDto companyGroupDto = companyGroupService.findById(domainId);
                 if (companyGroupDto == null) {
@@ -591,18 +588,6 @@ public class SyncEngine {
             case INTEGRATION -> new IntegrationDeltaDto(domainId);
             case COMPANY_GROUP -> new CompanyGroupDeltaDto(domainId);
             default -> throw new IllegalStateException(Constants.ORG_SYNC_PREFIX + "Unexpected value: " + domainType);
-        };
-    }
-
-    private Settable applyFind(DomainType domainType, Long domainId) {
-        return switch (domainType) {
-            case ORGANIZATION_CODE -> organizationCodeService.findById(domainId);
-            case DEPARTMENT -> departmentService.findById(domainId);
-            case USER -> userService.findById(domainId);
-            case RELATION_MEMBER -> memberService.findById(domainId);
-            case INTEGRATION -> integrationService.findById(domainId);
-            case COMPANY_GROUP -> companyGroupService.findById(domainId);
-            default -> throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "not support domain type in applyCreate");
         };
     }
 
