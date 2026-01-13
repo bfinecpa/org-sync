@@ -14,8 +14,4 @@ public record LogInfoDto(
     LogType logType
 ) {
 
-    @Override
-    public DomainType domain() {
-        return DomainType.of(domain, fieldName);
-    }
 }

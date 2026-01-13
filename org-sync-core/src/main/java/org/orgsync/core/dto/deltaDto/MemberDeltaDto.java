@@ -1,5 +1,6 @@
 package org.orgsync.core.dto.deltaDto;
 
+import org.orgsync.core.Constants;
 import org.orgsync.core.dto.LogInfoDto;
 import org.orgsync.core.dto.type.MemberType;
 
@@ -63,41 +64,63 @@ public class MemberDeltaDto implements Settable {
 
         Object updatedValue = logInfoDto.updatedValue();
         switch (logInfoDto.fieldName()) {
-            case "id" -> setId(Long.valueOf(updatedValue.toString()));
-            case "user" -> setUserId(Long.valueOf(updatedValue.toString()));
-            case "department" -> setDepartment(Long.valueOf(updatedValue.toString()));
-            case "dutyCode" -> setDutyCode(Long.valueOf(updatedValue.toString()));
+            case "id" -> setId(updatedValue.toString());
+            case "user" -> setUserId(updatedValue.toString());
+            case "department" -> setDepartment(updatedValue.toString());
+            case "dutyCode" -> setDutyCode(updatedValue.toString());
             case "memberType" -> setMemberType(MemberType.valueOf(updatedValue.toString()));
-            case "sortOrder" -> setSortOrder(Integer.parseInt(updatedValue.toString()));
-            case "departmentOrder" -> setDepartmentOrder(Integer.parseInt(updatedValue.toString()));
+            case "sortOrder" -> setSortOrder(updatedValue.toString());
+            case "departmentOrder" -> setDepartmentOrder(updatedValue.toString());
         }
     }
 
-    private void setId(Long id) {
-        this.id = id;
+    private void setId(String id) {
+        if (id == null || id.isEmpty()) {
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "id is null in MemberDeltaDto");
+        }else {
+            this.id = Long.parseLong(id);
+        }
     }
 
-    private void setUserId(Long userId) {
-        this.userId = userId;
+    private void setUserId(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "userId is null in MemberDeltaDto");
+        }else {
+            this.userId = Long.parseLong(userId);
+        }
     }
 
-    private void setDepartment(Long department) {
-        this.department = department;
+    private void setDepartment(String department) {
+        if (department == null || department.isEmpty()) {
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "department is null in MemberDeltaDto");
+        }else {
+            this.department = Long.parseLong(department);
+        }
     }
 
-    private void setDutyCode(Long dutyCode) {
-        this.dutyCode = dutyCode;
+    private void setDutyCode(String dutyCode) {
+        if (dutyCode == null || dutyCode.isEmpty()) {
+            this.dutyCode = null;
+        }else {
+            this.dutyCode = Long.parseLong(dutyCode);
+        }
     }
 
     private void setMemberType(MemberType memberType) {
         this.memberType = memberType;
     }
 
-    private void setSortOrder(int sortOrder) {
-        this.sortOrder = sortOrder;
+    private void setSortOrder(String sortOrder) {
+        if (sortOrder == null || sortOrder.isEmpty()) {
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "sortOrder is null in MemberDeltaDto");
+        }
+        this.sortOrder = Integer.parseInt(sortOrder);
     }
 
-    private void setDepartmentOrder(int departmentOrder) {
-        this.departmentOrder = departmentOrder;
+    private void setDepartmentOrder(String departmentOrder) {
+        if (departmentOrder == null || departmentOrder.isEmpty()) {
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "departmentOrder is null in MemberDeltaDto");
+        }
+        this.departmentOrder = Integer.parseInt(departmentOrder);
     }
 }

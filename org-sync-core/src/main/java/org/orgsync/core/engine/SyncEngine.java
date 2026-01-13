@@ -168,14 +168,14 @@ public class SyncEngine {
         for (Long snapshotId : sequenceDto.snapshotIdList()) {
             info(companyUuid, "Apply snapshot. snapshotId=" + snapshotId);
             SnapshotDto snapshotDto = client.fetchSnapshot(companyUuid, snapshotId);
-            compareCompanyGroup(snapshotDto.getCompanyGroupSnapshot(), companyDto);
-            compareIntegration(snapshotDto.getIntegrationSnapshot(), companyDto);
-            compareOrganizationCode(snapshotDto.getOrganizationCodeSnapshot(), companyDto);
-            compareUser(snapshotDto.getUserSnapshot(), companyDto);
-            compareDepartment(snapshotDto.getDepartmentSnapshot(), companyDto);
-            compareDepartmentMember(snapshotDto.getRelationSnapshot(), companyDto);
-            LogSeqService.saveLogSeq(companyDto.getId(), snapshotDto.getLogSeq());
-            lastLogSeq = snapshotDto.getLogSeq();
+            compareCompanyGroup(snapshotDto.companyGroupSnapshot(), companyDto);
+            compareIntegration(snapshotDto.integrationSnapshot(), companyDto);
+            compareOrganizationCode(snapshotDto.organizationCodeSnapshot(), companyDto);
+            compareUser(snapshotDto.userSnapshot(), companyDto);
+            compareDepartment(snapshotDto.departmentSnapshot(), companyDto);
+            compareDepartmentMember(snapshotDto.relationSnapshot(), companyDto);
+            LogSeqService.saveLogSeq(companyDto.getId(), snapshotDto.logSeq());
+            lastLogSeq = snapshotDto.logSeq();
             info(companyUuid, "Snapshot applied. snapshotId=" + snapshotId + ", lastLogSeq=" + lastLogSeq);
         }
         ProvisionSequenceDto response = client.fetchChanges(companyUuid, lastLogSeq);
@@ -222,25 +222,25 @@ public class SyncEngine {
 
 
         for (TreeSnapshotDto treeSnapshotDto : relationSnapshot) {
-            if (treeSnapshotDto.getIsDeleted()){
+            if (treeSnapshotDto.isDeleted()){
                 continue;
             }
 
-            Long parentId = treeSnapshotDto.getId();
+            Long parentId = treeSnapshotDto.id();
 
-            for (TreeDepartmentNodeSnapshotDto childDepartment : treeSnapshotDto.getChildDepartments()) {
-                if (childDepartment.getDeleted()) {
+            for (TreeDepartmentNodeSnapshotDto childDepartment : treeSnapshotDto.childDepartments()) {
+                if (childDepartment.isDeleted()) {
                     continue;
                 }
 
-                DepartmentDto departmentDto = dtoMap.get(childDepartment.getId());
+                DepartmentDto departmentDto = dtoMap.get(childDepartment.id());
                 if (departmentDto == null) {
-                    throw new IllegalStateException("No such department " + childDepartment.getId());
+                    throw new IllegalStateException("No such department " + childDepartment.id());
                 }
 
                 departmentDto.updateParentId(parentId);
                 departmentService.updateParentId(departmentDto);
-                info(companyDto.getUuid(), "update department. id: " + departmentDto.getId() + "parentId: " + parentId);
+                info(companyDto.getUuid(), "update department. id: " + departmentDto.getId() + " parentId: " + parentId);
             }
         }
     }
@@ -252,7 +252,7 @@ public class SyncEngine {
             return;
         }
 
-        Set<Long> newIds = departmentSnapshot.stream().map(DepartmentSnapshotDto::getDeptId).collect(Collectors.toSet());
+        Set<Long> newIds = departmentSnapshot.stream().map(DepartmentSnapshotDto::deptId).collect(Collectors.toSet());
         Set<Long> oldIds = departmentDtos.stream().map(DepartmentDto::getId).collect(Collectors.toSet());
 
 
@@ -296,7 +296,7 @@ public class SyncEngine {
             return;
         }
 
-        Set<Long> newIds = userSnapshot.stream().map(UserSnapshotDto::getUserId).collect(Collectors.toSet());
+        Set<Long> newIds = userSnapshot.stream().map(UserSnapshotDto::userId).collect(Collectors.toSet());
         Set<Long> oldIds = userDtos.stream().map(UserDto::getId).collect(Collectors.toSet());
 
         for (UserSnapshotDto userSnapshotDto : userSnapshot) {
@@ -309,13 +309,13 @@ public class SyncEngine {
                 .filter(dto -> dto.getValue().isEmpty())
                 .toList();
 
-            if (!oldIds.contains(userSnapshotDto.getUserId())) {
+            if (!oldIds.contains(userSnapshotDto.userId())) {
                 // 생성
                 userService.create(userDto);
                 multiLanguageService.create(multiLanguageDtosWithValue);
-                for (UserGroupSnapshotDto userGroupSnapshotDto : userSnapshotDto.getUserGroupList()) {
-                    UserGroupUserDto userGroupUserDto = new UserGroupUserDto(userSnapshotDto.getUserId(),
-                        userGroupSnapshotDto.getId());
+                for (UserGroupSnapshotDto userGroupSnapshotDto : userSnapshotDto.userGroupList()) {
+                    UserGroupUserDto userGroupUserDto = new UserGroupUserDto(userSnapshotDto.userId(),
+                        userGroupSnapshotDto.id());
                     userGroupCodeUserService.create(userGroupUserDto);
                 }
                 info(companyDto.getUuid(), "create user. id: " + userDto.getId());
@@ -330,9 +330,9 @@ public class SyncEngine {
                     .map(UserGroupUserDto::getUserGroupId)
                     .collect(Collectors.toSet());
 
-                Set<Long> newUserGroupCodeIds = userSnapshotDto.getUserGroupList()
+                Set<Long> newUserGroupCodeIds = userSnapshotDto.userGroupList()
                     .stream()
-                    .map(UserGroupSnapshotDto::getId)
+                    .map(UserGroupSnapshotDto::id)
                     .collect(Collectors.toSet());
 
                 for (Long newUserGroupCodeId : newUserGroupCodeIds) {
@@ -369,7 +369,7 @@ public class SyncEngine {
             return;
         }
 
-        Set<Long> newIds = organizationCodeSnapshot.stream().map(OrganizationCodeSnapshotDto::getId).collect(Collectors.toSet());
+        Set<Long> newIds = organizationCodeSnapshot.stream().map(OrganizationCodeSnapshotDto::id).collect(Collectors.toSet());
         Set<Long> oldIds = organizationCodeDtos.stream().map(OrganizationCodeDto::getId).collect(Collectors.toSet());
 
         for (OrganizationCodeSnapshotDto organizationCodeSnapshotDto : organizationCodeSnapshot) {
@@ -385,7 +385,7 @@ public class SyncEngine {
                 .filter(dto -> dto.getValue().isEmpty())
                 .toList();
 
-            if (!oldIds.contains(organizationCodeSnapshotDto.getId())) {
+            if (!oldIds.contains(organizationCodeSnapshotDto.id())) {
                  organizationCodeService.create(organizationCodeDto);
                  multiLanguageService.create(multiLanguageDtosWithValue);
                 info(companyDto.getUuid(), "create organization. id: " + organizationCodeDto.getId());
@@ -416,16 +416,16 @@ public class SyncEngine {
             return;
         }
 
-        Set<Long> newIds = integrationSnapshot.stream().map(IntegrationSnapshotDto::getId).collect(Collectors.toSet());
+        Set<Long> newIds = integrationSnapshot.stream().map(IntegrationSnapshotDto::id).collect(Collectors.toSet());
         Set<Long> oldIds = integrationDtos.stream().map(IntegrationDto::getId).collect(Collectors.toSet());
 
         for (IntegrationSnapshotDto integrationSnapshotDto : integrationSnapshot) {
-            if (!oldIds.contains(integrationSnapshotDto.getId())) {
-                IntegrationDto integrationDto = new IntegrationDto(integrationSnapshotDto.getId());
+            if (!oldIds.contains(integrationSnapshotDto.id())) {
+                IntegrationDto integrationDto = new IntegrationDto(integrationSnapshotDto.id());
                 integrationService.create(integrationDto);
                 info(companyDto.getUuid(), "create integration. id: " + integrationDto.getId());
                 UserDto userDto = userService.findByCompanyIdAndUserIds(companyDto.getId(),
-                    integrationSnapshotDto.getUserIdList());
+                    integrationSnapshotDto.userIdList());
 
                 if (userDto == null) {
                     continue;
@@ -459,9 +459,9 @@ public class SyncEngine {
     private void compareCompanyGroup(List<CompanyGroupSnapshotDto> companyGroupSnapshot, CompanyDto companyDto) {
         if (companyGroupSnapshot != null && !companyGroupSnapshot.isEmpty()) {
             CompanyGroupSnapshotDto companyGroupSnapshotDto = companyGroupSnapshot.get(0);
-            CompanyGroupDto companyGroupDto = companyGroupService.findById(companyGroupSnapshotDto.getId());
+            CompanyGroupDto companyGroupDto = companyGroupService.findById(companyGroupSnapshotDto.id());
             if (companyGroupDto == null) {
-                companyGroupDto = new CompanyGroupDto(companyGroupSnapshotDto.getId());
+                companyGroupDto = new CompanyGroupDto(companyGroupSnapshotDto.id());
                 companyGroupService.create(companyGroupDto);
                 info(companyDto.getUuid(), "create company group. id: " + companyGroupDto.getId());
             }
@@ -532,23 +532,46 @@ public class SyncEngine {
         Map<DomainKey, Settable> updateObjects) {
         Long domainId = logInfoDto.domainId();
         DomainKey domainKey = new DomainKey(domainType, domainId);
-        Settable object = createObjects.getOrDefault(domainKey, instantiateDto(domainType, domainId));
-        if (DomainType.COMPANY_GROUP.equals(domainType)) {
-            CompanyGroupDto companyGroupDto = companyGroupService.findById(domainId);
-            if (companyGroupDto == null) {
+        if (createObjects.containsKey(domainKey)) {
+            Settable object = createObjects.get(domainKey);
+            if (DomainType.COMPANY_GROUP.equals(domainType)) {
+                CompanyGroupDto companyGroupDto = companyGroupService.findById(domainId);
+                if (companyGroupDto == null) {
+                    createObjects.put(domainKey, object);
+                    updateObjects.put(domainKey, object);
+                }
+            } else if (DomainType.INTEGRATION.equals(domainType)) {
+                IntegrationDto integrationDto = integrationService.findById(domainId);
+                if (integrationDto == null) {
+                    createObjects.put(domainKey, object);
+                    updateObjects.put(domainKey, object);
+                }
+            } else {
+                object.set(logInfoDto);
                 createObjects.put(domainKey, object);
             }
-        } else if (DomainType.INTEGRATION.equals(domainType)) {
-            IntegrationDto integrationDto = integrationService.findById(domainId);
-            if (integrationDto == null) {
-                createObjects.put(domainKey, object);
+        }else {
+            Settable object = applyFind(domainType, domainId);
+            if (object == null) {
+                throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "can not found object for domain type. domain key " + domainKey);
+            }
+            if (DomainType.COMPANY_GROUP.equals(domainType)) {
+                CompanyGroupDto companyGroupDto = companyGroupService.findById(domainId);
+                if (companyGroupDto == null) {
+                    createObjects.put(domainKey, object);
+                    updateObjects.put(domainKey, object);
+                }
+            } else if (DomainType.INTEGRATION.equals(domainType)) {
+                IntegrationDto integrationDto = integrationService.findById(domainId);
+                if (integrationDto == null) {
+                    createObjects.put(domainKey, object);
+                    updateObjects.put(domainKey, object);
+                }
+            } else {
+                object.set(logInfoDto);
+                updateObjects.put(domainKey, object);
             }
         }
-        if (object == null) {
-            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "can not found object for domain type. domain key " + domainKey);
-        }
-        object.set(logInfoDto);
-        updateObjects.put(domainKey, object);
     }
 
     private void createDomainDto(LogInfoDto logInfoDto, DomainType domainType, Map<DomainKey, Settable> createObjects) {
@@ -571,10 +594,21 @@ public class SyncEngine {
         };
     }
 
+    private Settable applyFind(DomainType domainType, Long domainId) {
+        return switch (domainType) {
+            case ORGANIZATION_CODE -> organizationCodeService.findById(domainId);
+            case DEPARTMENT -> departmentService.findById(domainId);
+            case USER -> userService.findById(domainId);
+            case RELATION_MEMBER -> memberService.findById(domainId);
+            case INTEGRATION -> integrationService.findById(domainId);
+            case COMPANY_GROUP -> companyGroupService.findById(domainId);
+            default -> throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "not support domain type in applyCreate");
+        };
+    }
 
     private void applyCreate(DomainType domainType, Settable dto, CompanyDto companyDto) {
         switch (domainType) {
-            case ORGANIZATION_CODE -> createOrganizationCOde((OrganizationCodeDeltaDto) dto, companyDto);
+            case ORGANIZATION_CODE -> createOrganizationCode((OrganizationCodeDeltaDto) dto, companyDto);
             case DEPARTMENT -> createDepartment((DepartmentDeltaDto) dto, companyDto);
             case USER -> createUser((UserDeltaDto) dto, companyDto);
             case RELATION_MEMBER -> createMember((MemberDeltaDto) dto, companyDto);
@@ -678,7 +712,7 @@ public class SyncEngine {
 
         departmentService.create(departmentDto);
 
-        List<MultiLanguageDto> multiLanguageDtos = getMultiLanguages(deltaDto.getId(), TargetDomain.USER,
+        List<MultiLanguageDto> multiLanguageDtos = getMultiLanguages(deltaDto.getId(), TargetDomain.DEPARTMENT,
             deltaDto.getMultiLanguageDtoMap());
         List<MultiLanguageDto> multiLanguageDtosWithValue = multiLanguageDtos.stream()
             .filter(dto -> !dto.getValue().isEmpty())
@@ -690,7 +724,7 @@ public class SyncEngine {
         info(companyDto.getUuid(), "create department. id: " + deltaDto.getId());
     }
 
-    private void createOrganizationCOde(OrganizationCodeDeltaDto deltaDto, CompanyDto companyDto) {
+    private void createOrganizationCode(OrganizationCodeDeltaDto deltaDto, CompanyDto companyDto) {
         OrganizationCodeDto organizationCodeDto = new OrganizationCodeDto(
             deltaDto.getId(),
             companyDto.getId(),
@@ -700,7 +734,7 @@ public class SyncEngine {
             deltaDto.getSortOrder()
         );
         organizationCodeService.create(organizationCodeDto);
-        List<MultiLanguageDto> multiLanguageDtos = getMultiLanguages(deltaDto.getId(), TargetDomain.USER,
+        List<MultiLanguageDto> multiLanguageDtos = getMultiLanguages(deltaDto.getId(), TargetDomain.ORGANIZATION_CODE,
             deltaDto.getMultiLanguageDtoMap());
         List<MultiLanguageDto> multiLanguageDtosWithValue = multiLanguageDtos.stream()
             .filter(dto -> !dto.getValue().isEmpty())
@@ -954,14 +988,19 @@ public class SyncEngine {
 
     private <T> List<T> getList(String list) {
         try {
-           return objectMapper.readValue(list, new TypeReference<>() {
-           });
+            if (list == null || list.isBlank()) {
+                return List.of();
+            }
+           return objectMapper.readValue(list, new TypeReference<>() {});
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "Error parsing integration updated value", e);
         }
     }
 
     private List<MultiLanguageDto> getMultiLanguages(Long domainId, TargetDomain targetDomain, String multiLanguageMap) {
+        if (multiLanguageMap == null || multiLanguageMap.isBlank()) {
+            return List.of();
+        }
         List<MultiLanguageDto> multiLanguageDtos = new ArrayList<>();
         try {
             Map<String, String> multiLangauges = objectMapper.readValue(multiLanguageMap, new TypeReference<>() {});

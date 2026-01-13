@@ -10,90 +10,24 @@ import org.orgsync.core.dto.type.DepartmentStatus;
 import org.orgsync.core.dto.type.MultiLanguageType;
 import org.orgsync.core.dto.type.TargetDomain;
 
-public class DepartmentSnapshotDto {
-
-    private Long deptId;
-
-    private String name;
-
-    Map<MultiLanguageType, String> multiLanguageMap;
-
-    private int sortOrder;
-
-    private String code;
-
-    private String alias;
-
-    private String email;
-
-    private Boolean isDeleted;
-
-    private String departmentPath;
-
-    private String status;
-
-    public DepartmentSnapshotDto() {
-    }
-
-    public DepartmentSnapshotDto(Long deptId, String name, Map<MultiLanguageType, String> multiLanguageMap,
-        int sortOrder,
-        String code, String alias, String email, Boolean isDeleted, String departmentPath, String status) {
-        this.deptId = deptId;
-        this.name = name;
-        this.multiLanguageMap = multiLanguageMap;
-        this.sortOrder = sortOrder;
-        this.code = code;
-        this.alias = alias;
-        this.email = email;
-        this.isDeleted = isDeleted;
-        this.departmentPath = departmentPath;
-        this.status = status;
-    }
-
-    public Long getDeptId() {
-        return deptId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Map<MultiLanguageType, String> getMultiLanguageMap() {
-        return multiLanguageMap;
-    }
-
-    public int getSortOrder() {
-        return sortOrder;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public String getAlias() {
-        return alias;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public Boolean getDeleted() {
-        return isDeleted;
-    }
-
-    public String getDepartmentPath() {
-        return departmentPath;
-    }
-
-    public String getStatus() {
-        return status;
-    }
+public record DepartmentSnapshotDto(
+    Long deptId,
+    String name,
+    Map<MultiLanguageType, String> multiLanguageMap,
+    int sortOrder,
+    String code,
+    String alias,
+    String email,
+    Boolean isDeleted,
+    String departmentPath,
+    String status
+) {
 
     public List<MultiLanguageDto> toMultiLanguageDtos() {
         List<MultiLanguageDto> multiLanguageDtos = new ArrayList<>();
         for (Entry<MultiLanguageType, String> entry : multiLanguageMap.entrySet()) {
-            multiLanguageDtos.add(new MultiLanguageDto(this.deptId, TargetDomain.DEPARTMENT, entry.getKey(), entry.getValue()));
+            multiLanguageDtos.add(
+                new MultiLanguageDto(this.deptId, TargetDomain.DEPARTMENT, entry.getKey(), entry.getValue()));
         }
         return multiLanguageDtos;
     }
@@ -114,4 +48,3 @@ public class DepartmentSnapshotDto {
         );
     }
 }
-
