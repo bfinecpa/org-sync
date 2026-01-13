@@ -1,10 +1,10 @@
 package org.orgsync.spring.client;
 
-import java.net.URI;
 import org.orgsync.core.Constants;
 import org.orgsync.core.client.OrgChartClient;
 import org.orgsync.core.dto.ProvisionSequenceDto;
 import org.orgsync.core.dto.snapshotDto.SnapshotDto;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriBuilder;
@@ -34,16 +34,16 @@ public class OrgChartRestClient implements OrgChartClient {
             throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "companyUuid is required for change fetch");
         }
 
-        ProvisionSequenceDto response = restClient.get()
+        ResponseWrapper<ProvisionSequenceDto> response = restClient.get()
             .uri(uriBuilder -> uriBuilder.path(changesPath).build(companyUuid, logSeq))
             .retrieve()
-            .body(ProvisionSequenceDto.class);
+            .body(new ParameterizedTypeReference<ResponseWrapper<ProvisionSequenceDto>>() {});
 
-        if (response == null) {
+        if (response == null || response.data() == null) {
             throw new IllegalStateException(Constants.ORG_SYNC_PREFIX + "No response from org chart server");
         }
 
-        return response;
+        return response.data();
     }
 
     @Override
@@ -55,16 +55,16 @@ public class OrgChartRestClient implements OrgChartClient {
             throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "snapshotId is required for snapshot fetch");
         }
 
-        SnapshotDto response = restClient.get()
+        ResponseWrapper<SnapshotDto> response = restClient.get()
             .uri(uriBuilder -> uriBuilder.path(snapshotPath).build(companyUuid, snapshotId))
             .retrieve()
-            .body(SnapshotDto.class);
+            .body(new ParameterizedTypeReference<ResponseWrapper<SnapshotDto>>() {});
 
-        if (response == null) {
+        if (response == null || response.data() == null) {
             throw new IllegalStateException(Constants.ORG_SYNC_PREFIX + "No snapshot response from org chart server");
         }
 
-        return response;
+        return response.data();
     }
 
     private String normalizePath(String candidate, String fallback) {
