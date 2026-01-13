@@ -22,20 +22,6 @@ public class DepartmentDeltaDto implements Settable {
         this.id = id;
     }
 
-    public DepartmentDeltaDto(Long id, String name, Long parentId, Integer sortOrder, String code, String alias,
-        String emailId, DepartmentStatus status, String departmentPath, String multiLanguageDtoMap) {
-        this.id = id;
-        this.name = name;
-        this.parentId = parentId;
-        this.sortOrder = sortOrder;
-        this.code = code;
-        this.alias = alias;
-        this.emailId = emailId;
-        this.status = status;
-        this.departmentPath = departmentPath;
-        this.multiLanguageDtoMap = multiLanguageDtoMap;
-    }
-
     public Long getId() {
         return id;
     }

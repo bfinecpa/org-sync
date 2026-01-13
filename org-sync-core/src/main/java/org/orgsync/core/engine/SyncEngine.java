@@ -596,120 +596,14 @@ public class SyncEngine {
 
     private Settable applyFind(DomainType domainType, Long domainId) {
         return switch (domainType) {
-            case ORGANIZATION_CODE -> findOrganizationCodeDelta(domainId);
-            case DEPARTMENT -> findDepartmentDelta(domainId);
-            case USER -> findUserDelta(domainId);
-            case RELATION_MEMBER -> findMemberDelta(domainId);
-            case INTEGRATION -> findIntegrationDelta(domainId);
-            case COMPANY_GROUP -> findCompanyGroupDelta(domainId);
+            case ORGANIZATION_CODE -> organizationCodeService.findById(domainId);
+            case DEPARTMENT -> departmentService.findById(domainId);
+            case USER -> userService.findById(domainId);
+            case RELATION_MEMBER -> memberService.findById(domainId);
+            case INTEGRATION -> integrationService.findById(domainId);
+            case COMPANY_GROUP -> companyGroupService.findById(domainId);
             default -> throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "not support domain type in applyCreate");
         };
-    }
-
-    private OrganizationCodeDeltaDto findOrganizationCodeDelta(Long domainId) {
-        OrganizationCodeDto organizationCodeDto = organizationCodeService.findById(domainId);
-        if (organizationCodeDto == null) {
-            return null;
-        }
-        return new OrganizationCodeDeltaDto(
-            organizationCodeDto.getId(),
-            organizationCodeDto.getCode(),
-            organizationCodeDto.getType(),
-            organizationCodeDto.getName(),
-            organizationCodeDto.getSortOrder(),
-            null
-        );
-    }
-
-    private DepartmentDeltaDto findDepartmentDelta(Long domainId) {
-        DepartmentDto departmentDto = departmentService.findById(domainId);
-        if (departmentDto == null) {
-            return null;
-        }
-        return new DepartmentDeltaDto(
-            departmentDto.getId(),
-            departmentDto.getName(),
-            departmentDto.getParentId(),
-            departmentDto.getSortOrder(),
-            departmentDto.getCode(),
-            departmentDto.getAlias(),
-            departmentDto.getEmailId(),
-            departmentDto.getStatus(),
-            departmentDto.getDepartmentPath(),
-            null
-        );
-    }
-
-    private UserDeltaDto findUserDelta(Long domainId) {
-        UserDto userDto = userService.findById(domainId);
-        if (userDto == null) {
-            return null;
-        }
-        return new UserDeltaDto(
-            userDto.getId(),
-            userDto.getName(),
-            userDto.getEmployeeNumber(),
-            userDto.getLoginId(),
-            userDto.getLocale(),
-            userDto.getStatus(),
-            userDto.getNeedOperatorAssignment(),
-            null,
-            userDto.getDirectTel(),
-            userDto.getMobileNo(),
-            null,
-            userDto.getRepTel(),
-            userDto.getFax(),
-            userDto.getSelfInfo(),
-            userDto.getJob(),
-            userDto.getLocation(),
-            userDto.getHomePage(),
-            userDto.getMessenger(),
-            userDto.getBirthday(),
-            userDto.isLunarCalendar(),
-            userDto.getAnniversary(),
-            userDto.getAddress(),
-            userDto.getMemo(),
-            userDto.getExternalEmail(),
-            userDto.getJoinDate(),
-            userDto.getRecognizedJoinDate(),
-            userDto.getResidentRegistrationNumber(),
-            userDto.getEmployeeType(),
-            userDto.getPositionCodeId(),
-            userDto.getGradeCodeId(),
-            null
-        );
-    }
-
-    private MemberDeltaDto findMemberDelta(Long domainId) {
-        MemberDto memberDto = memberService.findById(domainId);
-        if (memberDto == null) {
-            return null;
-        }
-        return new MemberDeltaDto(
-            memberDto.getId(),
-            memberDto.getUserId(),
-            memberDto.getDepartmentId(),
-            memberDto.getDutyCodeId(),
-            memberDto.getMemberType(),
-            memberDto.getSortOrder(),
-            memberDto.getDepartmentOrder()
-        );
-    }
-
-    private IntegrationDeltaDto findIntegrationDelta(Long domainId) {
-        IntegrationDto integrationDto = integrationService.findById(domainId);
-        if (integrationDto == null) {
-            return null;
-        }
-        return new IntegrationDeltaDto(integrationDto.getId());
-    }
-
-    private CompanyGroupDeltaDto findCompanyGroupDelta(Long domainId) {
-        CompanyGroupDto companyGroupDto = companyGroupService.findById(domainId);
-        if (companyGroupDto == null) {
-            return null;
-        }
-        return new CompanyGroupDeltaDto(companyGroupDto.getId());
     }
 
     private void applyCreate(DomainType domainType, Settable dto, CompanyDto companyDto) {

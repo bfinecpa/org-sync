@@ -43,45 +43,6 @@ public class UserDeltaDto implements Settable {
         this.id = id;
     }
 
-    public UserDeltaDto(Long id, String name, String employeeNumber, String loginId, String locale, UserStatus status,
-        Boolean needOperatorAssignment, String multiLanguageMap, String directTel, String mobileNo, String mobileSearch,
-        String repTel, String fax, String selfInfo, String job, String location, String homePage, String messenger,
-        LocalDate birthday, Boolean lunarCalendar, LocalDate anniversary, String address, String memo,
-        String externalEmail, LocalDate joinDate, LocalDate recognizedJoinDate, String residentRegistrationNumber,
-        EmployeeType employeeType, Long positionCodeId, Long gradeCodeId, String userGroupUserList) {
-        this.id = id;
-        this.name = name;
-        this.employeeNumber = employeeNumber;
-        this.loginId = loginId;
-        this.locale = locale;
-        this.status = status;
-        this.needOperatorAssignment = needOperatorAssignment;
-        this.multiLanguageMap = multiLanguageMap;
-        this.directTel = directTel;
-        this.mobileNo = mobileNo;
-        this.mobileSearch = mobileSearch;
-        this.repTel = repTel;
-        this.fax = fax;
-        this.selfInfo = selfInfo;
-        this.job = job;
-        this.location = location;
-        this.homePage = homePage;
-        this.messenger = messenger;
-        this.birthday = birthday;
-        this.lunarCalendar = lunarCalendar;
-        this.anniversary = anniversary;
-        this.address = address;
-        this.memo = memo;
-        this.externalEmail = externalEmail;
-        this.joinDate = joinDate;
-        this.recognizedJoinDate = recognizedJoinDate;
-        this.residentRegistrationNumber = residentRegistrationNumber;
-        this.employeeType = employeeType;
-        this.positionCodeId = positionCodeId;
-        this.gradeCodeId = gradeCodeId;
-        this.userGroupUserList = userGroupUserList;
-    }
-
     public Long getId() {
         return id;
     }
