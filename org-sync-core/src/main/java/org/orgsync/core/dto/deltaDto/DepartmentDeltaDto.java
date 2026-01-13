@@ -76,10 +76,10 @@ public class DepartmentDeltaDto implements Settable {
         }
 
         switch (logInfoDto.fieldName()) {
-            case "id" -> setId(Long.valueOf(updatedValue.toString()));
+            case "id" -> setId(updatedValue.toString());
             case "name" -> setName(updatedValue.toString());
-            case "parent", "parentId" -> setParentId(Long.valueOf(updatedValue.toString()));
-            case "sort_order", "sortOrder" -> setSortOrder(Integer.parseInt(updatedValue.toString()));
+            case "parent", "parentId" -> setParentId(updatedValue.toString());
+            case "sort_order", "sortOrder" -> setSortOrder(updatedValue.toString());
             case "code" -> setCode(updatedValue.toString());
             case "alias" -> setAlias(updatedValue.toString());
             case "emailId" -> setEmailId(updatedValue.toString());
@@ -89,20 +89,31 @@ public class DepartmentDeltaDto implements Settable {
         }
     }
 
-    private void setId(Long id) {
-        this.id = id;
+    private void setId(String id) {
+        if (id == null || id.isEmpty()) {
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "id is null in DepartmentDeltaDto");
+        }
+        this.id = Long.parseLong(id);
     }
 
     private void setName(String name) {
         this.name = name;
     }
 
-    private void setParentId(Long parentId) {
-        this.parentId = parentId;
+    private void setParentId(String parentId) {
+        if (parentId == null || parentId.isEmpty()) {
+            this.parentId = null;
+        }else {
+            this.parentId = Long.valueOf(parentId);
+        }
     }
 
-    private void setSortOrder(int sortOrder) {
-        this.sortOrder = sortOrder;
+    private void setSortOrder(String sortOrder) {
+        if (sortOrder == null || sortOrder.isEmpty()) {
+            this.sortOrder = null;
+        }else {
+            this.sortOrder = Integer.parseInt(sortOrder);
+        }
     }
 
     private void setCode(String code) {

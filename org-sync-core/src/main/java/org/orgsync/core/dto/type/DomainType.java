@@ -14,27 +14,11 @@ public enum DomainType {
     ORGANIZATION_CODE("조직 코드"),
     RELATION("관계"),
     RELATION_DEPARTMENT("부서 조직 관계"),
-    RELATION_MEMBER("멤버 조직 관계"),
-    MULTI_LANGUAGE_USER("유저 다국어"),
-    MULTI_LANGUAGE_DEPARTMENT("부서 다국어"),
-    MULTI_LANGUAGE_ORGANIZATION_CODE("조직 코드 다국어");
+    RELATION_MEMBER("멤버 조직 관계");
 
-    private static final String MULTI_LANGUAGE_FILED_NAME = "multiLanguageMap";
     private final String title;
 
     DomainType(String title) {
         this.title = title;
-    }
-
-    public static DomainType of(DomainType domain, String fieldName) {
-        if (MULTI_LANGUAGE_FILED_NAME.equals(fieldName)) {
-            return switch (domain) {
-                case USER -> MULTI_LANGUAGE_USER;
-                case DEPARTMENT -> MULTI_LANGUAGE_DEPARTMENT;
-                case ORGANIZATION_CODE -> MULTI_LANGUAGE_ORGANIZATION_CODE;
-                default -> throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "Not support multi language domain type: " + domain);
-            };
-        }
-        return domain;
     }
 }

@@ -51,7 +51,7 @@ public class OrganizationCodeDeltaDto implements Settable {
         Object updatedValue = logInfoDto.updatedValue();
 
         switch (fieldName) {
-            case "id" -> setId(Long.valueOf(updatedValue.toString()));
+            case "id" -> setId(updatedValue.toString());
             case "code" -> setCode(updatedValue.toString());
             case "type" -> setType(OrganizationCodeType.valueOf(updatedValue.toString()));
             case "name" -> setName(updatedValue.toString());
@@ -61,8 +61,11 @@ public class OrganizationCodeDeltaDto implements Settable {
 
     }
 
-    private void setId(Long id) {
-        this.id = id;
+    private void setId(String id) {
+        if (id == null || id.isEmpty()) {
+            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "id is null in OrganizationCodeDto");
+        }
+        this.id = Long.parseLong(id);
     }
 
     private void setCode(String code) {

@@ -120,7 +120,7 @@ public class UserDeltaDto implements Settable {
     }
 
     public Boolean getLunarCalendar() {
-        return lunarCalendar;
+        return Boolean.TRUE.equals(lunarCalendar);
     }
 
     public LocalDate getAnniversary() {
@@ -186,7 +186,7 @@ public class UserDeltaDto implements Settable {
             case "loginId" -> setLoginId(updatedValue.toString());
             case "locale" -> setLocale(updatedValue.toString());
             case "status" -> setStatus(UserStatus.valueOf(updatedValue.toString()));
-            case "needOperatorAssignment" -> setNeedOperatorAssignment(Boolean.valueOf(updatedValue.toString()));
+            case "needOperatorAssignment" -> setNeedOperatorAssignment(updatedValue.toString());
             case "multiLanguageMap" -> setMultiLanguageMap(updatedValue.toString());
             case "directTel" -> setDirectTel(updatedValue.toString());
             case "mobileNo" -> setMobileNo(updatedValue.toString());
@@ -199,7 +199,7 @@ public class UserDeltaDto implements Settable {
             case "homePage" -> setHomePage(updatedValue.toString());
             case "messenger" -> setMessenger(updatedValue.toString());
             case "birthday" -> setBirthday(LocalDate.parse(updatedValue.toString()));
-            case "lunarCalendar" -> setLunarCalendar(Boolean.parseBoolean(updatedValue.toString()));
+            case "lunarCalendar" -> setLunarCalendar(updatedValue.toString());
             case "anniversary" -> setAnniversary(LocalDate.parse(updatedValue.toString()));
             case "address" -> setAddress(updatedValue.toString());
             case "memo" -> setMemo(updatedValue.toString());
@@ -208,8 +208,8 @@ public class UserDeltaDto implements Settable {
             case "recognizedJoinDate" -> setRecognizedJoinDate(LocalDate.parse(updatedValue.toString()));
             case "residentRegistrationNumber" -> setResidentRegistrationNumber(updatedValue.toString());
             case "employeeType" -> setEmployeeType(EmployeeType.valueOf(updatedValue.toString()));
-            case "positionCode" -> setPositionCodeId(Long.valueOf(updatedValue.toString()));
-            case "gradeCode" -> setGradeCodeId(Long.valueOf(updatedValue.toString()));
+            case "positionCode" -> setPositionCodeId(updatedValue.toString());
+            case "gradeCode" -> setGradeCodeId(updatedValue.toString());
             case "userGroupUserList" -> setUserGroupUserList(updatedValue.toString());
         }
     }
@@ -239,8 +239,12 @@ public class UserDeltaDto implements Settable {
         this.status = status;
     }
 
-    private void setNeedOperatorAssignment(Boolean needOperatorAssignment) {
-        this.needOperatorAssignment = needOperatorAssignment;
+    private void setNeedOperatorAssignment(String needOperatorAssignment) {
+        if (needOperatorAssignment == null || needOperatorAssignment.isEmpty()) {
+            this.needOperatorAssignment = false;
+            return;
+        }
+        this.needOperatorAssignment = Boolean.parseBoolean(needOperatorAssignment);
     }
 
     private void setMultiLanguageMap(String multiLanguageMap) {
@@ -291,8 +295,12 @@ public class UserDeltaDto implements Settable {
         this.birthday = birthday;
     }
 
-    private void setLunarCalendar(Boolean lunarCalendar) {
-        this.lunarCalendar = lunarCalendar;
+    private void setLunarCalendar(String lunarCalendar) {
+        if (lunarCalendar == null || lunarCalendar.isEmpty()) {
+            this.lunarCalendar = false;
+        }else {
+            this.lunarCalendar = Boolean.parseBoolean(lunarCalendar);
+        }
     }
 
     private void setAnniversary(LocalDate anniversary) {
@@ -327,12 +335,22 @@ public class UserDeltaDto implements Settable {
         this.employeeType = employeeType;
     }
 
-    private void setPositionCodeId(Long positionCodeId) {
-        this.positionCodeId = positionCodeId;
+    private void setPositionCodeId(String positionCodeId) {
+        if (positionCodeId == null || positionCodeId.isEmpty()) {
+            this.positionCodeId = null;
+        }else {
+            this.positionCodeId = Long.parseLong(positionCodeId);
+
+        }
     }
 
-    private void setGradeCodeId(Long gradeCodeId) {
-        this.gradeCodeId = gradeCodeId;
+    private void setGradeCodeId(String gradeCodeId) {
+        if (gradeCodeId == null || gradeCodeId.isEmpty()) {
+            this.gradeCodeId = null;
+        }else {
+            this.gradeCodeId = Long.parseLong(gradeCodeId);
+
+        }
     }
 
     private void setUserGroupUserList(String userGroupUserList) {

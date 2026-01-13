@@ -240,7 +240,7 @@ public class SyncEngine {
 
                 departmentDto.updateParentId(parentId);
                 departmentService.updateParentId(departmentDto);
-                info(companyDto.getUuid(), "update department. id: " + departmentDto.getId() + "parentId: " + parentId);
+                info(companyDto.getUuid(), "update department. id: " + departmentDto.getId() + " parentId: " + parentId);
             }
         }
     }
@@ -532,23 +532,46 @@ public class SyncEngine {
         Map<DomainKey, Settable> updateObjects) {
         Long domainId = logInfoDto.domainId();
         DomainKey domainKey = new DomainKey(domainType, domainId);
-        Settable object = createObjects.getOrDefault(domainKey, instantiateDto(domainType, domainId));
-        if (DomainType.COMPANY_GROUP.equals(domainType)) {
-            CompanyGroupDto companyGroupDto = companyGroupService.findById(domainId);
-            if (companyGroupDto == null) {
+        if (createObjects.containsKey(domainKey)) {
+            Settable object = createObjects.get(domainKey);
+            if (DomainType.COMPANY_GROUP.equals(domainType)) {
+                CompanyGroupDto companyGroupDto = companyGroupService.findById(domainId);
+                if (companyGroupDto == null) {
+                    createObjects.put(domainKey, object);
+                    updateObjects.put(domainKey, object);
+                }
+            } else if (DomainType.INTEGRATION.equals(domainType)) {
+                IntegrationDto integrationDto = integrationService.findById(domainId);
+                if (integrationDto == null) {
+                    createObjects.put(domainKey, object);
+                    updateObjects.put(domainKey, object);
+                }
+            } else {
+                object.set(logInfoDto);
                 createObjects.put(domainKey, object);
             }
-        } else if (DomainType.INTEGRATION.equals(domainType)) {
-            IntegrationDto integrationDto = integrationService.findById(domainId);
-            if (integrationDto == null) {
-                createObjects.put(domainKey, object);
+        }else {
+            Settable object = applyFind(domainType, domainId);
+            if (object == null) {
+                throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "can not found object for domain type. domain key " + domainKey);
+            }
+            if (DomainType.COMPANY_GROUP.equals(domainType)) {
+                CompanyGroupDto companyGroupDto = companyGroupService.findById(domainId);
+                if (companyGroupDto == null) {
+                    createObjects.put(domainKey, object);
+                    updateObjects.put(domainKey, object);
+                }
+            } else if (DomainType.INTEGRATION.equals(domainType)) {
+                IntegrationDto integrationDto = integrationService.findById(domainId);
+                if (integrationDto == null) {
+                    createObjects.put(domainKey, object);
+                    updateObjects.put(domainKey, object);
+                }
+            } else {
+                object.set(logInfoDto);
+                updateObjects.put(domainKey, object);
             }
         }
-        if (object == null) {
-            throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "can not found object for domain type. domain key " + domainKey);
-        }
-        object.set(logInfoDto);
-        updateObjects.put(domainKey, object);
     }
 
     private void createDomainDto(LogInfoDto logInfoDto, DomainType domainType, Map<DomainKey, Settable> createObjects) {
@@ -571,10 +594,21 @@ public class SyncEngine {
         };
     }
 
+    private Settable applyFind(DomainType domainType, Long domainId) {
+        return switch (domainType) {
+            case ORGANIZATION_CODE -> organizationCodeService.findById(domainId);
+            case DEPARTMENT -> departmentService.findById(domainId);
+            case USER -> userService.findById(domainId);
+            case RELATION_MEMBER -> memberService.findById(domainId);
+            case INTEGRATION -> integrationService.findById(domainId);
+            case COMPANY_GROUP -> companyGroupService.findById(domainId);
+            default -> throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "not support domain type in applyCreate");
+        };
+    }
 
     private void applyCreate(DomainType domainType, Settable dto, CompanyDto companyDto) {
         switch (domainType) {
-            case ORGANIZATION_CODE -> createOrganizationCOde((OrganizationCodeDeltaDto) dto, companyDto);
+            case ORGANIZATION_CODE -> createOrganizationCode((OrganizationCodeDeltaDto) dto, companyDto);
             case DEPARTMENT -> createDepartment((DepartmentDeltaDto) dto, companyDto);
             case USER -> createUser((UserDeltaDto) dto, companyDto);
             case RELATION_MEMBER -> createMember((MemberDeltaDto) dto, companyDto);
@@ -678,7 +712,7 @@ public class SyncEngine {
 
         departmentService.create(departmentDto);
 
-        List<MultiLanguageDto> multiLanguageDtos = getMultiLanguages(deltaDto.getId(), TargetDomain.USER,
+        List<MultiLanguageDto> multiLanguageDtos = getMultiLanguages(deltaDto.getId(), TargetDomain.DEPARTMENT,
             deltaDto.getMultiLanguageDtoMap());
         List<MultiLanguageDto> multiLanguageDtosWithValue = multiLanguageDtos.stream()
             .filter(dto -> !dto.getValue().isEmpty())
@@ -690,7 +724,7 @@ public class SyncEngine {
         info(companyDto.getUuid(), "create department. id: " + deltaDto.getId());
     }
 
-    private void createOrganizationCOde(OrganizationCodeDeltaDto deltaDto, CompanyDto companyDto) {
+    private void createOrganizationCode(OrganizationCodeDeltaDto deltaDto, CompanyDto companyDto) {
         OrganizationCodeDto organizationCodeDto = new OrganizationCodeDto(
             deltaDto.getId(),
             companyDto.getId(),
@@ -700,7 +734,7 @@ public class SyncEngine {
             deltaDto.getSortOrder()
         );
         organizationCodeService.create(organizationCodeDto);
-        List<MultiLanguageDto> multiLanguageDtos = getMultiLanguages(deltaDto.getId(), TargetDomain.USER,
+        List<MultiLanguageDto> multiLanguageDtos = getMultiLanguages(deltaDto.getId(), TargetDomain.ORGANIZATION_CODE,
             deltaDto.getMultiLanguageDtoMap());
         List<MultiLanguageDto> multiLanguageDtosWithValue = multiLanguageDtos.stream()
             .filter(dto -> !dto.getValue().isEmpty())
@@ -954,14 +988,19 @@ public class SyncEngine {
 
     private <T> List<T> getList(String list) {
         try {
-           return objectMapper.readValue(list, new TypeReference<>() {
-           });
+            if (list == null || list.isBlank()) {
+                return List.of();
+            }
+           return objectMapper.readValue(list, new TypeReference<>() {});
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "Error parsing integration updated value", e);
         }
     }
 
     private List<MultiLanguageDto> getMultiLanguages(Long domainId, TargetDomain targetDomain, String multiLanguageMap) {
+        if (multiLanguageMap == null || multiLanguageMap.isBlank()) {
+            return List.of();
+        }
         List<MultiLanguageDto> multiLanguageDtos = new ArrayList<>();
         try {
             Map<String, String> multiLangauges = objectMapper.readValue(multiLanguageMap, new TypeReference<>() {});
