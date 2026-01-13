@@ -49,9 +49,17 @@ public class OrganizationCodeDto{
     }
 
     public void update(String code, OrganizationCodeType type, String name, Integer sortOrder) {
-        this.code = code;
-        this.type = type;
-        this.name = name;
-        this.sortOrder = sortOrder;
+        if (code != null) {
+            this.code = code;
+        }
+        if (type != null) {
+            this.type = type;
+        }
+        if (name != null) {
+            this.name = name;
+        }
+        if (sortOrder != null) {
+            this.sortOrder = sortOrder;
+        }
     }
 }

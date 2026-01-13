@@ -79,13 +79,29 @@ public class DepartmentDto implements Settable {
 
     public void update(String name, Long parentId, Integer sortOrder, String code, String alias, String emailId,
         DepartmentStatus status, String departmentPath) {
-        this.name = name;
-        this.parentId = parentId;
-        this.sortOrder = sortOrder;
-        this.code = code;
-        this.alias = alias;
-        this.emailId = emailId;
-        this.status = status;
-        this.departmentPath = departmentPath;
+        if (name != null) {
+            this.name = name;
+        }
+        if (parentId != null) {
+            this.parentId = parentId;
+        }
+        if (sortOrder != null) {
+            this.sortOrder = sortOrder;
+        }
+        if (code != null) {
+            this.code = code;
+        }
+        if (alias != null) {
+            this.alias = alias;
+        }
+        if (emailId != null) {
+            this.emailId = emailId;
+        }
+        if (status != null) {
+            this.status = status;
+        }
+        if (departmentPath != null) {
+            this.departmentPath = departmentPath;
+        }
     }
 }
