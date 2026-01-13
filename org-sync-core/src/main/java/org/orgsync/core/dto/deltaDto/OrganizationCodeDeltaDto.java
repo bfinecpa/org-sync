@@ -16,6 +16,16 @@ public class OrganizationCodeDeltaDto implements Settable {
         this.id = domainId;
     }
 
+    public OrganizationCodeDeltaDto(Long id, String code, OrganizationCodeType type, String name, Integer sortOrder,
+        String multiLanguageDtoMap) {
+        this.id = id;
+        this.code = code;
+        this.type = type;
+        this.name = name;
+        this.sortOrder = sortOrder;
+        this.multiLanguageDtoMap = multiLanguageDtoMap;
+    }
+
     public Long getId() {
         return id;
     }
