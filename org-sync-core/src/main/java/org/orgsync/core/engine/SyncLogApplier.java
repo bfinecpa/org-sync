@@ -603,6 +603,6 @@ class SyncLogApplier {
     }
 
     private void info(String companyUuid, String message) {
-        logger.info(Constants.ORG_SYNC_LOG_PREFIX + companyUuid + ", message: " + message);
+        logger.info(Constants.DELTA_LOG_PREFIX + companyUuid + ", message: " + message);
     }
 }

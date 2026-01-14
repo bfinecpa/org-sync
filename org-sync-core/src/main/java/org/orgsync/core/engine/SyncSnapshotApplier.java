@@ -378,12 +378,7 @@ class SyncSnapshotApplier {
                 info(companyDto.getUuid(), "create company group. id: " + companyGroupDto.getId());
             }
 
-            if (companyDto.getCompanyGroupId() == null) {
-                companyDto.updateCompanyGroupId(companyGroupDto.getId());
-                companyService.updateCompanyGroupId(companyDto);
-                info(companyDto.getUuid(), "update company group. company id: " + companyDto.getId()
-                    + " company group: " + companyGroupDto.getId());
-            } else if (!companyDto.getCompanyGroupId().equals(companyGroupDto.getId())) {
+            if (companyDto.getCompanyGroupId() == null || !companyDto.getCompanyGroupId().equals(companyGroupDto.getId())) {
                 companyDto.updateCompanyGroupId(companyGroupDto.getId());
                 companyService.updateCompanyGroupId(companyDto);
                 info(companyDto.getUuid(), "update company group. company id: " + companyDto.getId()
@@ -405,6 +400,6 @@ class SyncSnapshotApplier {
     }
 
     private void info(String companyUuid, String message) {
-        logger.info(Constants.ORG_SYNC_LOG_PREFIX + companyUuid + ", message: " + message);
+        logger.info(Constants.SNAPSHOT_LOG_PREFIX + companyUuid + ", message: " + message);
     }
 }
