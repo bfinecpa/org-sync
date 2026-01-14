@@ -503,9 +503,9 @@ public class SyncEngine {
             if(domainType == null) {
                 throw new IllegalArgumentException(Constants.ORG_SYNC_PREFIX + "can not find domain type");
             }
-            if (LogType.CREATE.equals(logInfoDto.logType())) {
+            if (LogType.CREATE.equals(logInfoDto.logType()) && !specificFilter(logInfoDto)) {
                 createDomainDto(logInfoDto, domainType, createObjects);
-            } else if (LogType.UPDATE.equals(logInfoDto.logType())) {
+            } else if (LogType.UPDATE.equals(logInfoDto.logType()) || specificFilter(logInfoDto)) {
                 updateDomainDto(logInfoDto, domainType, createObjects, updateObjects);
             } else if (LogType.DELETE.equals(logInfoDto.logType())) {
                 deleteDomainDto(logInfoDto, domainType, deleteObjects);
@@ -520,6 +520,10 @@ public class SyncEngine {
 
         LogSeqService.saveLogSeq(companyDto.getId(), logSeq);
         info(companyUuid, "LogInfos applied. logSeq :" + logSeq);
+    }
+
+    private boolean specificFilter(LogInfoDto logInfoDto) {
+        return DomainType.USER.equals(logInfoDto.domain()) && "userGroupUserList".equals(logInfoDto.fieldName());
     }
 
     private static void deleteDomainDto(LogInfoDto logInfoDto, DomainType domainType, Set<DomainKey> deleteObjects) {
@@ -550,8 +554,8 @@ public class SyncEngine {
                 object.set(logInfoDto);
                 createObjects.put(domainKey, object);
             }
-        }else {
-            Settable object = instantiateDto(domainType, domainId);
+        } else {
+            Settable object = updateObjects.getOrDefault(domainKey, instantiateDto(domainType, domainId));
             if (DomainType.COMPANY_GROUP.equals(domainType)) {
                 CompanyGroupDto companyGroupDto = companyGroupService.findById(domainId);
                 if (companyGroupDto == null) {
@@ -694,6 +698,10 @@ public class SyncEngine {
             deltaDto.getStatus(),
             deltaDto.getDepartmentPath()
         );
+
+        if (departmentDto.getId()==1459060369380098048L) {
+            int test = 0;
+        }
 
         departmentService.create(departmentDto);
 
