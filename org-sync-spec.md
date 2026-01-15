@@ -29,6 +29,105 @@
 
 ---
 
+## 0.1 개발 장비에서 Git 기반으로 라이브러리 사용하기
+
+Nexus 같은 사설 저장소 없이도 Git 저장소를 기반으로 라이브러리를 테스트할 수 있다.
+방법은 크게 **원격 Git 저장소 의존성 사용**, **로컬 Maven 저장소 퍼블리시**, **Gradle composite build** 세 가지다.
+
+### 옵션 A: 원격 Git 저장소 의존성 사용 (클론 없이)
+
+GitHub의 소스를 직접 의존성으로 쓰고 싶다면, **JitPack** 같은 Git 기반 빌드 저장소를 활용할 수 있다.
+클론 없이 `implementation`만 추가해도 된다.
+
+1) 사용하는 서비스의 `build.gradle`에 JitPack 저장소를 추가한다.
+
+```groovy
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+```
+
+2) 의존성을 GitHub 좌표로 추가한다. (예: tag 또는 commit SHA 사용)
+
+```groovy
+dependencies {
+    implementation "com.github.<org-or-user>:<repo>:<tag-or-commit>"
+}
+```
+
+> 멀티모듈의 경우에도 위 한 줄로 `org-sync-core`, `org-sync-spring`,
+> `org-sync-boot-starter`가 함께 빌드되며, 필요한 모듈만 의존성으로 선언해서 사용하면 된다.
+
+예시 (현재 그룹/버전과 별개로 GitHub 태그 기준):
+
+```groovy
+dependencies {
+    implementation "com.github.<org-or-user>:org-sync:v0.1.0"
+    implementation "com.github.<org-or-user>:org-sync:v0.1.0:org-sync-core"
+    implementation "com.github.<org-or-user>:org-sync:v0.1.0:org-sync-spring"
+    implementation "com.github.<org-or-user>:org-sync:v0.1.0:org-sync-boot-starter"
+}
+```
+
+> `:module` 표기는 JitPack의 다중 모듈 의존성 표기이며, 실제 사용 시에는 필요한 모듈만 추가하면 된다.
+
+### 옵션 B: 로컬 Maven 저장소에 퍼블리시
+
+1) Git 저장소를 클론한다.
+
+```bash
+git clone <org-sync-repo-url>
+cd org-sync
+```
+
+2) 로컬 Maven 저장소에 퍼블리시한다. (3개 모듈만 공개)
+
+```bash
+./gradlew :org-sync-core:publishToMavenLocal \
+  :org-sync-spring:publishToMavenLocal \
+  :org-sync-boot-starter:publishToMavenLocal
+```
+
+3) 사용하는 서비스의 `build.gradle`에 `mavenLocal()`과 의존성을 추가한다.
+
+```groovy
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.orgsync:org-sync-core:0.1.0-SNAPSHOT"
+    implementation "org.orgsync:org-sync-spring:0.1.0-SNAPSHOT"
+    implementation "org.orgsync:org-sync-boot-starter:0.1.0-SNAPSHOT"
+}
+```
+
+> 버전은 `build.gradle`의 `version` 값을 따른다.
+
+### 옵션 C: Gradle composite build로 직접 연결
+
+1) Git 저장소를 원하는 경로에 클론한다.
+2) 사용하는 서비스의 `settings.gradle`에 `includeBuild`를 추가한다.
+
+```groovy
+includeBuild('../org-sync')
+```
+
+3) 서비스의 `build.gradle`에 동일한 좌표로 의존성을 추가하면,
+   Gradle이 로컬 소스 모듈을 자동으로 연결한다.
+
+```groovy
+dependencies {
+    implementation "org.orgsync:org-sync-core:0.1.0-SNAPSHOT"
+    implementation "org.orgsync:org-sync-spring:0.1.0-SNAPSHOT"
+    implementation "org.orgsync:org-sync-boot-starter:0.1.0-SNAPSHOT"
+}
+```
+
+---
+
 ## 1. 범위 / 비범위
 
 ### 1.1 In-Scope (라이브러리가 제공)
