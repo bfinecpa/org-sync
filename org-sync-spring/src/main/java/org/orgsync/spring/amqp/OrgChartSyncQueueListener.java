@@ -5,6 +5,7 @@ import static org.orgsync.core.Constants.ORG_SYNC_PREFIX;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import org.orgsync.core.engine.SyncEngine;
+import org.orgsync.core.logging.SyncLogger;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.Exchange;
 import org.springframework.amqp.rabbit.annotation.Queue;
@@ -19,10 +20,12 @@ public class OrgChartSyncQueueListener {
 
     private final SyncEngine syncEngine;
     private final ObjectMapper objectMapper;
+    private final SyncLogger syncLogger;
 
-    public OrgChartSyncQueueListener(SyncEngine syncEngine, ObjectMapper objectMapper) {
+    public OrgChartSyncQueueListener(SyncEngine syncEngine, ObjectMapper objectMapper, SyncLogger syncLogger) {
         this.syncEngine = syncEngine;
         this.objectMapper = objectMapper;
+        this.syncLogger = syncLogger;
     }
 
     @RabbitListener(bindings = @QueueBinding(
@@ -30,17 +33,24 @@ public class OrgChartSyncQueueListener {
         exchange = @Exchange(value = "dop_user_company_sync.fanout", type = "fanout", durable = "true")
     ))
     public void handleOrgChartSyncRequest(Object payload) {
-        System.out.println("OrgChartSyncQueueListener received org-sync request: " + payload);
-        OrgChartSyncPayload orgChartSyncPayload = resolvePayload(payload);
-        if (orgChartSyncPayload == null || !StringUtils.hasText(orgChartSyncPayload.companyUuid())) {
-            throw new IllegalArgumentException(ORG_SYNC_PREFIX + "companyUuid is required in org chart sync event");
-        }
+        syncLogger.info("OrgChartSyncQueueListener received org-sync request: " + payload);
+        try {
+            OrgChartSyncPayload orgChartSyncPayload = resolvePayload(payload);
+            if (orgChartSyncPayload == null || !StringUtils.hasText(orgChartSyncPayload.companyUuid())) {
+                syncLogger.error(ORG_SYNC_PREFIX + "companyUuid is required in org chart sync event", null);
+                return;
+            }
 
-        if (orgChartSyncPayload.logSeq() == null) {
-            throw new IllegalArgumentException(ORG_SYNC_PREFIX + "logSeq is required in org chart sync event");
-        }
+            if (orgChartSyncPayload.logSeq() == null) {
+                syncLogger.error(ORG_SYNC_PREFIX + "logSeq is required in org chart sync event", null);
+                return;
+            }
 
-        syncEngine.synchronizeCompany(orgChartSyncPayload.companyUuid(), orgChartSyncPayload.logSeq());
+            syncEngine.synchronizeCompany(orgChartSyncPayload.companyUuid(), orgChartSyncPayload.logSeq());
+        }
+        catch (Exception ex) {
+            syncLogger.error(ORG_SYNC_PREFIX + "Failed to process org chart sync event", ex);
+        }
     }
 
     private OrgChartSyncPayload resolvePayload(Object payload) {

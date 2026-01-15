@@ -2,6 +2,7 @@ package org.orgsync.spring.amqp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.orgsync.core.engine.SyncEngine;
+import org.orgsync.core.logging.SyncLogger;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -21,7 +22,9 @@ public class OrgSyncAmqpConfiguration {
     }
 
     @Bean
-    public OrgChartSyncQueueListener companySyncQueueListener(SyncEngine syncEngine, ObjectMapper objectMapper) {
-        return new OrgChartSyncQueueListener(syncEngine, objectMapper);
+    public OrgChartSyncQueueListener companySyncQueueListener(SyncEngine syncEngine,
+                                                              ObjectMapper objectMapper,
+                                                              SyncLogger syncLogger) {
+        return new OrgChartSyncQueueListener(syncEngine, objectMapper, syncLogger);
     }
 }
