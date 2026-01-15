@@ -19,7 +19,6 @@ import org.orgsync.spring.logging.Slf4jSyncLogger;
 import org.orgsync.spring.transaction.SpringTransactionRunner;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
