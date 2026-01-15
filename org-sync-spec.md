@@ -1,693 +1,231 @@
+# org-sync 스펙 문서 (재작성 v1)
 
-# 조직도 동기화 공통 라이브러리 명세서 (v0.1)
+## 1. 목표
 
-## 0. 목적
+org-sync는 **조직도 서버(원천)**에서 내려오는 변경 로그/스냅샷을 하위 시스템으로 동기화하기 위한 공통 라이브러리다. 동기화의 핵심은 아래와 같다.
 
-여러 하위 서버가 **조직도 서버(원천)로부터 조직도 도메인 데이터를 동기화**하는 로직을 공통화한다.
+- **동기화 트리거**: RabbitMQ 이벤트(회사 UUID + logSeq)
+- **동기화 방식**: 하위 시스템이 org chart 서버로부터 **pull**
+- **데이터 형태**: Delta(변경 로그) 또는 Snapshot
+- **반영 방식**: 서비스 인터페이스를 통한 저장소 업데이트
+- **락/트랜잭션**: 회사 단위 락 + 트랜잭션 실행 추상화
 
-* 동기화 트리거: RabbitMQ “회사 변경 이벤트”
-* 동기화 방식: 하위 서버가 `sinceCursor`(마지막 처리 커서)로 조직도 서버에 **pull**
-* 데이터 형태: **스냅샷** 또는 **변경 로그(델타)**
-* 적용 방식: 하위 서버 DB에 **JDBC로 반영**
-* 저장 범위: 하위 서버는 **필요 도메인/필드/레코드만 저장**
-* 이벤트: 하위 서버 내부로 **도메인 생성/수정/삭제 + 필드 변경 이벤트** 발행 가능
-
-### RabbitMQ 연동 (회사 변경 이벤트)
-
-* 기본 큐 이름: `orgsync.org-chart.sync.queue` (환경변수/설정 `orgsync.amqp.org-chart.sync.queue`로 변경 가능)
-* 교환기: `dop_user_company_sync` (환경변수/설정 `orgsync.amqp.org-chart.sync.exchange`로 변경 가능)
-* 라우팅 키: `user_company.sync` (환경변수/설정 `orgsync.amqp.org-chart.sync.routing-key`로 변경 가능)
-
-* 메시지 페이로드(JSON): `{ "companyId": "<회사 ID>" }`
-* 소비 로직: 큐 수신 시 해당 `companyId`로 `SyncEngine.synchronizeCompany` 호출
-* 메시지 컨버터: `Jackson2JsonMessageConverter`
-
-### 에러 메시지 정책
-
-* 라이브러리에서 던지는 예외 메시지는 `[org-sync]` 접두사를 포함해 로그에서 출처를 명확히 한다.
-* 동일한 접두사를 모든 모듈에서 사용해 운영자가 장애 원인을 빠르게 식별할 수 있도록 한다.
+이 문서는 현재 코드(`org-sync-core`, `org-sync-spring`, `org-sync-boot-starter`)에 구현된 기능을 기준으로 재정리했다.
 
 ---
 
-## 0.1 개발 장비에서 Git 기반으로 라이브러리 사용하기
+## 2. 모듈 구성
 
-Nexus 같은 사설 저장소 없이도 Git 저장소를 기반으로 라이브러리를 테스트할 수 있다.
-방법은 크게 **원격 Git 저장소 의존성 사용**, **로컬 Maven 저장소 퍼블리시**, **Gradle composite build** 세 가지다.
+### 2.1 org-sync-core
 
-### 옵션 A: 원격 Git 저장소 의존성 사용 (클론 없이)
+순수 자바 모듈로 동기화 엔진과 DTO, 서비스 인터페이스를 제공한다.
 
-GitHub의 소스를 직접 의존성으로 쓰고 싶다면, **JitPack** 같은 Git 기반 빌드 저장소를 활용할 수 있다.
-클론 없이 `implementation`만 추가해도 된다.
+- `SyncEngine`: 동기화 전체 흐름을 조율
+- `SyncLogApplier`: delta 로그를 도메인별 CRUD로 반영
+- `SyncSnapshotApplier`: snapshot 데이터를 비교/반영
+- `OrgChartClient`: 원천 시스템 호출 인터페이스
+- `OrgSync*Service`: 하위 저장소 CRUD 인터페이스
+- `LockManager`: 회사 단위 동시성 제어
+- `TransactionRunner`: 트랜잭션 실행 추상화
 
-1) 사용하는 서비스의 `build.gradle`에 JitPack 저장소를 추가한다.
+### 2.2 org-sync-spring
 
-```groovy
-repositories {
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-}
-```
+Spring Framework용 어댑터.
 
-2) 의존성을 GitHub 좌표로 추가한다. (예: tag 또는 commit SHA 사용)
+- `OrgChartRestClient`: RestClient 기반 원천 호출 구현
+- `OrgSyncConfiguration`: 기본 빈 조립
+- `OrgSyncAmqpConfiguration`: RabbitMQ 리스너 구성
+- `InMemoryLockManager`: 테스트/로컬용 인메모리 락
+- `InMemoryOrgSyncStore`: 테스트용 인메모리 저장소
 
-```groovy
-dependencies {
-    implementation "com.github.<org-or-user>:<repo>:<tag-or-commit>"
-}
-```
+### 2.3 org-sync-boot-starter
 
-> 멀티모듈의 경우에도 위 한 줄로 `org-sync-core`, `org-sync-spring`,
-> `org-sync-boot-starter`가 함께 빌드되며, 필요한 모듈만 의존성으로 선언해서 사용하면 된다.
+Spring Boot 자동 설정 모듈.
 
-예시 (현재 그룹/버전과 별개로 GitHub 태그 기준):
-
-```groovy
-dependencies {
-    implementation "com.github.<org-or-user>:org-sync:v0.1.0"
-    implementation "com.github.<org-or-user>:org-sync:v0.1.0:org-sync-core"
-    implementation "com.github.<org-or-user>:org-sync:v0.1.0:org-sync-spring"
-    implementation "com.github.<org-or-user>:org-sync:v0.1.0:org-sync-boot-starter"
-}
-```
-
-> `:module` 표기는 JitPack의 다중 모듈 의존성 표기이며, 실제 사용 시에는 필요한 모듈만 추가하면 된다.
-
-### 옵션 B: 로컬 Maven 저장소에 퍼블리시
-
-1) Git 저장소를 클론한다.
-
-```bash
-git clone <org-sync-repo-url>
-cd org-sync
-```
-
-2) 로컬 Maven 저장소에 퍼블리시한다. (3개 모듈만 공개)
-
-```bash
-./gradlew :org-sync-core:publishToMavenLocal \
-  :org-sync-spring:publishToMavenLocal \
-  :org-sync-boot-starter:publishToMavenLocal
-```
-
-3) 사용하는 서비스의 `build.gradle`에 `mavenLocal()`과 의존성을 추가한다.
-
-```groovy
-repositories {
-    mavenLocal()
-    mavenCentral()
-}
-
-dependencies {
-    implementation "org.orgsync:org-sync-core:0.1.0-SNAPSHOT"
-    implementation "org.orgsync:org-sync-spring:0.1.0-SNAPSHOT"
-    implementation "org.orgsync:org-sync-boot-starter:0.1.0-SNAPSHOT"
-}
-```
-
-> 버전은 `build.gradle`의 `version` 값을 따른다.
-
-### 옵션 C: Gradle composite build로 직접 연결
-
-1) Git 저장소를 원하는 경로에 클론한다.
-2) 사용하는 서비스의 `settings.gradle`에 `includeBuild`를 추가한다.
-
-```groovy
-includeBuild('../org-sync')
-```
-
-3) 서비스의 `build.gradle`에 동일한 좌표로 의존성을 추가하면,
-   Gradle이 로컬 소스 모듈을 자동으로 연결한다.
-
-```groovy
-dependencies {
-    implementation "org.orgsync:org-sync-core:0.1.0-SNAPSHOT"
-    implementation "org.orgsync:org-sync-spring:0.1.0-SNAPSHOT"
-    implementation "org.orgsync:org-sync-boot-starter:0.1.0-SNAPSHOT"
-}
-```
+- `OrgSyncAutoConfiguration`: 기본 빈 등록
+- `OrgSyncAmqpAutoConfiguration`: AMQP 설정 자동 구성
 
 ---
 
-## 1. 범위 / 비범위
+## 3. 동기화 흐름
 
-### 1.1 In-Scope (라이브러리가 제공)
+### 3.1 주요 흐름
 
-1. 동기화 엔진
+1. **RabbitMQ 이벤트 수신** → 회사 UUID + logSeq 확보
+2. `SyncEngine.synchronizeCompany(companyUuid, logSeq)` 실행
+3. LockManager로 회사 단위 락 획득
+4. TransactionRunner로 트랜잭션 실행
+5. 현재 저장된 logSeq 확인 후 필요 시 delta/snapshot 적용
 
-* 커서 로드/저장
-* 스냅샷/델타 처리 분기
-* JDBC upsert/delete 반영
-* 트랜잭션/락/멱등성 보장
-  * `LockManager` 인터페이스만 의존하며, 기본 구현은 DB의 `SELECT ... FOR UPDATE` 기반 `JdbcLockManager`이다.
-  * 소비 애플리케이션은 인프라에 맞춰 자체 락 구현(예: Redis 뮤텍스, 다른 DB 락)을 주입할 수 있다.
+### 3.2 logSeq 제어
 
-2. 저장 선택(프로젝션)
+- 현재 저장된 logSeq보다 **작거나 같은 값**은 무시된다.
+- logSeq는 `OrgSyncLogSeqService`를 통해 저장/조회된다.
 
-* YAML 또는 코드 DSL 기반 도메인/필드 선택
-* YAML 또는 DSL 기반 테이블/컬럼 매핑
-* (옵션) 레코드 필터링(조건 저장)
+### 3.3 Snapshot 처리
 
-3. 실행 시 검증
+- 원천 서버 응답이 `needSnapshot=true`이면 snapshot을 먼저 적용한다.
+- 응답의 `snapshotIdList`를 순회하면서 `fetchSnapshot`을 호출한다.
+- 스냅샷 처리 후, 마지막 logSeq 기준으로 delta를 다시 적용한다.
 
-* YAML에 선언된 테이블/컬럼이 실제 DB에 존재하는지 검증(실패 시 fail-fast)
+### 3.4 Delta 처리
 
-4. 이벤트 발행(하위 서버 내부)
-
-* EntityCreated/EntityUpdated/EntityDeleted
-* FieldUpdated(선택한 필드만)
-* SnapshotApplied(스냅샷 처리 완료 요약 이벤트)
-
-5. Spring/Spring Boot 통합
-
-* Spring용 `@Configuration` 제공
-* Spring Boot starter(자동 설정) 제공 ([Home][1])
-
-### 1.2 Out-of-Scope (초기 버전에서 제외)
-
-* 조직도 서버의 내부 저장소/스키마 설계
-* 조직도 서버의 데이터 생성/정합성 검증 로직
-* 하위 서버의 “도메인 모델(JPA 엔티티)” 제공 (JDBC 기반)
-* 분산 트랜잭션(2PC) 보장
+- `ProvisionSequenceDto.logInfoList`를 도메인 단위로 그룹화하여 생성/수정/삭제를 반영한다.
+- 응답의 `needUpdateNextLog=true`이면 `logSeq`를 다음 커서로 간주하고 재호출한다.
+- 다음 커서가 이전 커서보다 커지지 않으면 즉시 오류를 발생시킨다.
 
 ---
 
-## 2. 핵심 가정(계약)
+## 4. 외부 인터페이스
 
-라이브러리 구현의 성공을 위해 조직도 서버 응답은 다음을 만족해야 한다.
+### 4.1 RabbitMQ 이벤트
 
-1. 델타(변경 로그)에는 아래를 제공
-* 변경된 엔티티의 **after 값**(저장에 필요한 값)
+`org-sync-spring`은 아래 기본 설정으로 리스너를 등록한다.
 
-2. 커서(cursor)는 “여기까지 처리했다”를 나타내는 값이며,
+- Queue: `orgsync.org-chart.sync.queue`
+- Exchange: `dop_user_company_sync.fanout` (fanout 타입)
 
-* 요청은 `sinceCursor`로 하고,
-* 응답은 `nextCursor`를 준다.
-* 일반적으로 `seq > sinceCursor`(exclusive) 규칙을 따른다.
+메시지는 아래 두 형태를 지원한다.
 
-3. 조직도 서버는 하위 서버의 커서가 오래되거나 로그가 유실된 경우 `needSnapshot=true`로 응답할 수 있다.
-
----
-
-## 3. 도메인 범위
-
-지원 도메인(고정):
-
-* 회사그룹
-* 겸직 정보
-* 조직 코드
-* 사용자
-* 부서
-* 조직 관계(사용자-부서)
-
-각 도메인은 “기본 키(식별자)”를 갖는다. (예: userUuid, deptUuid 등)
-3.1 도메인별 “저장 가능한 필드 카탈로그” (원천 스키마 → 하위 서버 프로젝션)
-
-목표: 조직도 서버가 제공할 수 있는 “표준 필드(캐노니컬)”를 정의하고, 하위 서버는 YAML 또는 코드 DSL로 필요한 필드만 저장한다.
-
-3.1.1 공통 필드(모든 도메인 권장)
-필드	의미	권장 타입(Postgres)	비고
-createdAt	생성 시각	timestamptz	스냅샷에서도 제공 권장
-updatedAt	최종 수정 시각	timestamptz	델타/스냅샷 공통
-
-시간은 UTC ISO-8601을 계약으로 권장.
-
-3.1.2 도메인별 표준 필드 (캐노니컬)
-
-아래 필드들은 “조직도 서버가 제공 가능한 최대치”를 정의한 것이고, 하위 서버 저장 여부는 YAML/DSL로 선택한다.
-
-(A) USER (사용자)
-
-PK 후보: userUuid(권장), 또는 userId(숫자형)
-
-필드:
-
-userUuid : varchar(64)
-
-loginId : varchar(128) (옵션)
-
-name : varchar(256)
-
-displayName : varchar(256) (옵션)
-
-email : varchar(320) (옵션)
-
-mobile : varchar(32) (옵션)
-
-orgCode : varchar(128) (조직 코드)
-
-status : varchar(32) (예: ACTIVE/LEAVE/LOCKED)
-
-positionName : varchar(128) (옵션)
-
-jobTitleName : varchar(128) (옵션)
-
-workType : varchar(32) (옵션)
-
-sortOrder : int (옵션)
-
-(B) DEPT (부서)
-
-PK 후보: deptUuid
-
-필드:
-
-deptUuid : varchar(64)
-
-parentDeptUuid : varchar(64) (루트면 null)
-
-deptName : varchar(256)
-
-deptCode : varchar(128) (옵션)
-
-path : text (옵션, 예: /ROOT/SALES/TEAM1)
-
-level : int (옵션)
-
-sortOrder : int (옵션)
-
-(C) USER_DEPT (조직 관계: 사용자-부서)
-
-PK 후보: 복합키 (userUuid, deptUuid) 또는 별도 relUuid
-
-필드:
-
-userUuid : varchar(64)
-
-deptUuid : varchar(64)
-
-role : varchar(32) (예: MEMBER/LEADER) (옵션)
-
-primary : boolean (주부서 여부) (옵션)
-
-joinedAt : timestamptz (옵션)
-
-leftAt : timestamptz (옵션)
-
-(D) ORG_CODE (조직 코드)
-
-PK 후보: orgCode
-
-필드:
-
-orgCode : varchar(128)
-
-orgName : varchar(256) (옵션)
-
-enabled : boolean (옵션)
-
-(E) CONCURRENT_POSITION (겸직 정보)
-
-PK 후보: id 또는 (userUuid, deptUuid, fromAt) 등
-
-필드:
-
-userUuid : varchar(64)
-
-deptUuid : varchar(64)
-
-fromAt : timestamptz (옵션)
-
-toAt : timestamptz (옵션)
-
-type : varchar(32) (옵션)
-
-(F) COMPANY_GROUP (회사그룹)
-
-PK 후보: groupId 또는 groupUuid
-
-필드:
-
-groupId : varchar(64)
-
-groupName : varchar(256)
-
-memberCompanyIds : text 또는 별도 매핑 테이블 권장
----
-
-## 4. 아키텍처 / 모듈 구성
-
-### 4.1 모듈
-
-1. `orgsync-core`
-
-* Spring/Boot 의존 없음
-* 동기화 엔진, 스펙 빌더/YAML 파서/검증기, JDBC 적용기, 커서 저장 인터페이스, 이벤트 인터페이스(SPI)
-
-2. `orgsync-spring`
-
-* Spring Framework 통합
-* 트랜잭션 연동, Spring 이벤트 발행 어댑터, (선택) Spring AMQP 리스너 어댑터
-
-3. `orgsync-spring-boot-starter`
-
-* Boot 자동 설정 제공 ([Home][1])
-* `DataSource`, `PlatformTransactionManager`가 존재할 때 자동 활성화
-
-> Boot2/Spring5와 Boot3/Spring6가 혼재라면 starter를 라인 분리하는 설계를 권장(추후 결정)
-
----
-
-## 5. 외부 인터페이스(조직도 서버 / RabbitMQ)
-
-### 5.1 RabbitMQ 트리거 이벤트(입력)
-
-* exchange/queue/binding은 사용 서비스에서 구성 가능
-* 메시지 payload 최소 예시:
+1) 직접 payload
 
 ```json
 {
-  "companyId": "C001",
-  "eventId": "uuid",
-  "occurredAt": "2025-12-23T10:00:00Z"
+  "companyUuid": "C001",
+  "logSeq": 1234
 }
 ```
 
-### 5.2 ACK 전략 (권장)
-
-* 메시지 ACK는 **DB 반영 + 커서 저장 트랜잭션 커밋 이후** 수행
-* Spring AMQP 사용 시 `AcknowledgeMode.MANUAL`을 권장 ([Home][2])
-
-### 5.3 조직도 서버 Pull API (초안)
-
-1. 변경 로그 요청
-
-* `GET /orgsync/changes?companyId={id}&sinceCursor={cursor}&projection={...}`
-* 응답:
+2) messagePayload 래핑 구조
 
 ```json
 {
-  "needSnapshot": false,
-  "nextCursor": "123456789",
-  "changes": [
-    {
-      "domain": "USER",
-      "op": "UPDATE",
-      "key": {"userUuid":"U1"},
-      "changedFields": ["name","orgCode"],
-      "after": {"userUuid":"U1","name":"홍길동","orgCode":"SALES-1"},
-      "occurredAt": "..."
-    }
-  ]
+  "messagePayload": "{\"companyUuid\":\"C001\",\"logSeq\":1234}"
 }
 ```
 
-2. 스냅샷 요청/응답(청크 권장)
+> `messagePayload`는 문자열(JSON)로 들어오는 경우를 처리하도록 구현되어 있다.
 
-* 응답:
+### 4.2 org chart 서버 API
+
+`OrgChartRestClient`가 사용하는 기본 경로는 다음과 같다.
+
+- 변경 로그: `/api/provision/common/sync/company/{companyUuid}/sequence/{logSeq}`
+- 스냅샷: `/api/provision/common/sync/company/{companyUuid}/snapshot/{snapshotId}`
+
+응답은 `ResponseWrapper<T>` 형태(`{"data": {...}}`)를 기대한다.
+
+#### 변경 로그 응답 예시
 
 ```json
 {
-  "needSnapshot": true,
-  "snapshotCursor": "200000000",
-  "chunks": [
-    {"domain":"USER","items":[...], "chunkNo":1, "last":false},
-    {"domain":"USER","items":[...], "chunkNo":2, "last":true}
-  ]
+  "data": {
+    "needSnapshot": false,
+    "snapshotIdList": [],
+    "logSeq": 1234,
+    "needUpdateNextLog": false,
+    "logInfoList": [
+      {
+        "domain": "USER",
+        "domainId": 1001,
+        "fieldName": "name",
+        "updatedValue": "홍길동",
+        "logType": "UPDATE"
+      }
+    ]
+  }
+}
+```
+
+#### 스냅샷 응답 예시
+
+```json
+{
+  "data": {
+    "logSeq": 5678,
+    "companyGroupSnapshot": [],
+    "integrationSnapshot": [],
+    "organizationCodeSnapshot": [],
+    "userSnapshot": [],
+    "departmentSnapshot": [],
+    "relationSnapshot": []
+  }
 }
 ```
 
 ---
 
-## 6. 하위 서버 DB 요구사항
+## 5. 도메인 범위
 
-### 6.1 커서 저장 테이블(기본 제공 DDL)
+현재 엔진이 지원하는 도메인 유형은 다음과 같다.
 
-라이브러리는 기본 DDL(예: Postgres/MySQL)을 제공하거나, “사용 서비스가 생성”하도록 문서화한다.
+- ORGANIZATION_CODE (조직 코드)
+- DEPARTMENT (부서)
+- USER (사용자)
+- RELATION_MEMBER (사용자-부서 관계)
+- INTEGRATION (겸직/통합)
+- COMPANY_GROUP (회사 그룹)
 
-예시(논리):
-
-* `sync_state(company_id PK, last_cursor, last_success_at, last_snapshot_at, version, updated_at)`
-* 동시성 제어를 위해 `company_id` 단일 row에 대해 락을 잡는다.
-
-### 6.2 JDBC 적용 방식
-
-* `JdbcTemplate` 또는 `NamedParameterJdbcTemplate` 기반
-* 대량 처리는 `batchUpdate`를 기본 전략으로 사용 ([Home][3])
+각 도메인은 delta 로그 또는 snapshot 구조에 따라 업데이트된다.
 
 ---
 
-## 7. 동기화 엔진 동작 명세
+## 6. 저장소 인터페이스
 
-### 7.1 처리 흐름(요약)
+하위 시스템은 아래 서비스 인터페이스를 구현해야 한다.
 
-1. (트리거) 회사 이벤트 수신
-2. 현재 `last_cursor` 읽기
-3. 조직도 서버에 `sinceCursor=last_cursor`로 pull
-4. 응답이 스냅샷이면 snapshot 적용, 아니면 changes 적용
-5. DB 반영 + 커서 전진을 **단일 트랜잭션**으로 커밋
-6. 커밋 성공 후:
+필수 구현(동기화에 직접 사용됨):
 
-* 메시지 ACK
-* 내부 이벤트 발행
+- `OrgSyncCompanyService`
+- `OrgSyncLogSeqService`
+- `OrgSyncOrganizationCodeService`
+- `OrgSyncDepartmentService`
+- `OrgSyncUserService`
+- `OrgSyncMemberService`
+- `OrgSyncIntegrationService`
+- `OrgSyncCompanyGroupService`
+- `OrgSyncUserGroupCodeUserService`
+- `OrgSyncMultiLanguageService`
 
-### 7.2 동시 실행 제어(기본)
-
-**DB 행 락 + 커서 CAS**를 기본으로 한다.
-
-* 트랜잭션 시작 후 `sync_state`의 `company_id` 행을 `SELECT ... FOR UPDATE`로 잠금 ([PostgreSQL][4])
-* “내가 pull 요청에 사용한 sinceCursor”와 현재 DB last_cursor가 다르면:
-
-  * 다른 워커가 먼저 처리한 것으로 보고 이번 실행은 중단(또는 재시작 정책 선택)
-
-추가 안전장치(CAS):
-
-* `UPDATE sync_state SET last_cursor=? WHERE company_id=? AND last_cursor=?`
-* 영향 row=0이면 커서 경합 → 중단/재시작
-
-DB 락용 테이블/컬럼은 설정으로 바꿀 수 있다.
-
-* 기본: `SELECT uuid FROM company WHERE uuid=:companyUuid FOR UPDATE`
-* 변경: `orgsync.lock.company.table`, `orgsync.lock.company.uuid-column`
-  * ex) `orgsync.lock.company.table=tenant_company`, `orgsync.lock.company.uuid-column=company_uuid`
-
-### 7.3 Redis 분산락(옵션)
-
-* 목적: “중복 pull”을 줄이기 위한 single-flight 최적화
-* 정합성의 최종 방어선은 **DB 커서 CAS**로 유지
-
-설정으로 선택:
-
-* `lock.strategy = DB_ONLY | REDIS_SINGLE_FLIGHT`
+각 서비스는 생성/수정/삭제/조회 작업을 도메인별 DTO로 수행한다.
 
 ---
 
-## 8. “필요 데이터만 저장” 명세 (YAML/DSL)
+## 7. 다국어 데이터 처리
 
-### 8.1 YAML 목표
+- 사용자/부서/조직코드는 다국어 맵을 가진다.
+- Snapshot/Delta 모두에서 다국어 값이 포함되면 다음 규칙을 적용한다.
 
-하위 서버가 선언만으로 아래를 정의:
+| 상태 | 처리 |
+| --- | --- |
+| 값 존재 | create 또는 update |
+| 빈 값 | delete |
 
-* 저장할 도메인 on/off
-* 저장할 필드(화이트리스트)
-* 테이블/컬럼 매핑
-* PK(또는 유니크 키)
-* upsert/patch/delete 정책
-* (옵션) 레코드 필터 정책
-* (옵션) 이벤트 발행 범위
-
-### 8.2 Java Builder DSL 예시
-
-`OrgSyncSpec` 빌더 DSL을 사용하면 YAML 없이 코드만으로 프로젝션을 정의할 수 있다.
-
-```java
-import static org.orgsync.core.spec.OrgSyncSpec.orgsyncSpec;
-import static org.orgsync.core.spec.RecordFilters.prefix;
-import static org.orgsync.core.spec.SqlColumnType.*;
-
-@Bean
-OrgSyncSpec orgSyncSpec() {
-  return orgsyncSpec(spec -> {
-    spec.state(s -> s.table("sync_state").companyIdColumn("company_id").cursorColumn("last_cursor"));
-    spec.validateSchemaOnStartup(true);
-
-    spec.domain("USER", d -> {
-      d.enabled(true);
-      d.table("app_user");
-      d.pk("user_uuid");
-      d.writeMode(WriteMode.UPSERT);
-      d.deleteMode(DeleteMode.HARD_DELETE);
-      d.map("userUuid", "user_uuid", VARCHAR, 64, false);
-      d.map("name", "user_name", VARCHAR, 256, false);
-      d.map("orgCode", "org_code", VARCHAR, 128, true);
-      d.map("updatedAt", "updated_at", TIMESTAMPTZ, null, false);
-      d.filter(prefix("orgCode", "SALES-"));
-      d.emit(e -> e.entityEvents(true).fieldEvents("name", "orgCode"));
-    });
-
-    spec.domain("DEPT", d -> d.enabled(false));
-  });
-}
-```
-
-### 8.3 YAML 예시(초안)
-
-```yaml
-orgsync:
-  state:
-    table: sync_state
-    companyIdColumn: company_id
-    cursorColumn: last_cursor
-
-  validateSchemaOnStartup: true
-
-  domains:
-    USER:
-      enabled: true
-      table: app_user
-      pk: [user_uuid]
-      writeMode: UPSERT
-      deleteMode: HARD_DELETE
-      columns:
-        userUuid: user_uuid
-        name: user_name
-        orgCode: org_code
-      filters:
-        - type: PREFIX
-          field: orgCode
-          value: "SALES-"
-      emit:
-        entityEvents: true
-        fieldEvents: [name, orgCode]
-
-    DEPT:
-      enabled: false
-```
-
-### 8.4 스키마 검증 규칙
-
-`validateSchemaOnStartup=true`일 때:
-
-* 각 enabled 도메인에 대해 table 존재 여부 확인
-* `pk` 컬럼 존재 여부 확인
-* `columns`에 선언된 컬럼 존재 여부 확인
-* 실패 시 애플리케이션 기동 실패(fail-fast)
+`multiLanguageMap`은 JSON 문자열 형태로 전달되며, `MultiLanguageType` 키를 사용한다.
 
 ---
 
-## 9. 이벤트 발행 명세(하위 서버 내부)
+## 8. 락/트랜잭션
 
-### 9.1 이벤트 타입
-
-* `EntityCreated(domain, key, after)`
-* `EntityUpdated(domain, key, changedFields, after)`
-* `EntityDeleted(domain, key)`
-* `FieldUpdated(domain, key, field, oldValue?, newValue)`
-* `SnapshotApplied(companyId, cursor, domains)`
-
-### 9.2 이벤트 발행 정책
-
-* 기본: 델타 처리 시에만 Entity/Field 이벤트 발행
-* 스냅샷 처리 시:
-
-  * 기본은 `SnapshotApplied`만 발행(대량 이벤트 폭주 방지)
-  * 옵션으로 스냅샷에서도 Entity 이벤트 발행 가능(주의: 성능/폭주)
+- `LockManager`는 회사 단위 동시성 제어를 담당한다.
+- `TransactionRunner`는 동기화 작업을 트랜잭션으로 감싼다.
+- Spring 환경에서는 `SpringTransactionRunner`가 `PlatformTransactionManager` 기반으로 제공된다.
 
 ---
 
-## 10. SPI(확장 포인트) 명세
+## 9. 에러 정책
 
-YAML로 커버하기 어려운 서비스별 로직을 코드로 플러그인 할 수 있게 한다.
-
-### 10.1 SPI 목록(초안)
-
-* `RowFilter`: 레코드 저장 여부 결정
-* `ValueTransformer`: 필드 값 변환
-* `MergeStrategy`: patch/merge 규칙(널 처리, 우선순위)
-* `EventMapper`: 변경 결과 → 이벤트 생성 규칙
-
-### 10.2 결합 방식
-
-* Spring/Boot 환경: Spring Bean 주입이 기본
-* (옵션) 순수 자바 환경을 대비하면 ServiceLoader 지원 가능(후순위)
+- 공통 예외 메시지 접두사는 `[org-sync]`로 통일한다.
+- logSeq가 증가하지 않는 응답이 오면 즉시 실패하도록 설계되어 있다.
 
 ---
 
-## 11. Spring / Spring Boot 통합 명세
+## 10. 현재 범위에서 제외되는 기능
 
-### 11.1 Boot Starter 동작
+아래 항목은 기존 문서에 있었지만 현재 구현에는 포함되지 않는다.
 
-* `DataSource`가 존재하면 동기화 관련 빈 자동 등록 ([Home][1])
-* `JdbcTemplate` 없으면 `DataSource`로 생성
-* RabbitMQ 사용 시, 설정이 있을 때만 Listener 컨테이너 등록(옵션)
+- YAML/DSL 기반 스펙 정의
+- JDBC 직접 upsert/스키마 검증
+- 이벤트 발행(SPI) 자동 연결
 
-### 11.2 DataSource 선택 규칙
-
-* 기본: `@Primary` DataSource 사용
-* 옵션: `orgsync.datasourceBeanName`으로 명시 선택
-
----
-
-## 12. 실패/재시도/멱등성 정책
-
-### 12.1 멱등성 원칙
-
-* DB 반영은 UPSERT 중심(또는 PK 기반 insert/update 분리)
-* 커서 전진은 “커밋 성공 후” + CAS로 중복/경합 방어
-
-### 12.2 재시도
-
-* 조직도 서버 호출 실패: 재시도(지수 백오프) + 최대 횟수
-* DB 반영 실패: 트랜잭션 롤백 → 메시지 NACK/requeue 또는 DLQ 정책(옵션)
-
-### 12.3 독성 메시지 대응
-
-* 반복 실패 시 DLQ로 라우팅(운영 설정 가이드 제공)
-
----
-
-## 13. 성능 요구사항(초안)
-
-* 스냅샷/대량 변경 시:
-
-  * 도메인별 청크 적용
-  * JDBC batchUpdate 사용 권장 ([Home][3])
-* 동시성:
-
-  * 회사 단위 직렬화가 기본(락 키=companyId)
-* 메모리:
-
-  * 대량 응답은 스트리밍/청크 단위 처리(전체 적재 금지)
-
----
-
-## 14. 구현 산출물(코덱스 작업 항목)
-
-### 14.1 Repository/Build
-
-* 멀티모듈 Gradle(또는 Maven)
-* 모듈: core / spring / boot-starter
-* 샘플 앱 2개:
-
-  * boot-sample
-  * spring-sample
-
-### 14.2 핵심 클래스(초안)
-
-* `SyncEngine`
-* `OrgChartClient` (HTTP)
-* `SyncLogSeqRepository` (JDBC)
-* `JdbcApplier`
-* `YamlSpecLoader` + `SpecValidator`
-* `DomainEventPublisher`(인터페이스) + Spring 구현
-* `LockManager`(DB 기본, Redis 옵션)
-
-### 14.3 테스트(필수)
-
-* 단위 테스트: YAML 파싱/검증, SQL 생성, 커서 CAS
-* 통합 테스트(Testcontainers 권장):
-
-  * DB row lock 경합 시 커서 역전 방지
-  * 스냅샷 처리 후 커서 갱신
-  * 델타 중복 수신에도 멱등 처리
-
----
-
-## 15. MVP 우선순위(추천)
-
-1. 델타 처리 + DB 락/CAS + JDBC UPSERT + 커서 저장
-2. YAML 도메인/필드/컬럼 매핑 + 기동 검증
-3. 스냅샷(청크) 처리 + SnapshotApplied 이벤트
-4. 필드 이벤트(whitelist) + SPI 확장
-5. Redis single-flight 옵션 + DLQ 운영 가이드
-
----
+이 기능들이 필요하다면 별도의 확장이 필요하다.
