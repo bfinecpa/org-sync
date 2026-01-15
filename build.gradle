@@ -11,6 +11,7 @@ subprojects {
     // Use the Java Library plugin so "api" configurations are available for modules
     // that need to expose dependencies to their consumers.
     apply plugin: 'java-library'
+    apply plugin: 'maven-publish'
 
     group = rootProject.group
     version = rootProject.version
@@ -26,6 +27,16 @@ subprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
+    }
+}
+
+configure([project(':org-sync-core'), project(':org-sync-spring'), project(':org-sync-boot-starter')]) {
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+            }
+        }
     }
 }
 
