@@ -33,8 +33,8 @@ public class OrgChartSyncQueueListener {
         exchange = @Exchange(value = "dop_user_company_sync.fanout", type = "fanout", durable = "true")
     ))
     public void handleOrgChartSyncRequest(Object payload) {
-        syncLogger.info("OrgChartSyncQueueListener received org-sync request: " + payload);
         try {
+            syncLogger.info(ORG_SYNC_PREFIX + "Received OrgChart sync request");
             OrgChartSyncPayload orgChartSyncPayload = resolvePayload(payload);
             if (orgChartSyncPayload == null || !StringUtils.hasText(orgChartSyncPayload.companyUuid())) {
                 syncLogger.error(ORG_SYNC_PREFIX + "companyUuid is required in org chart sync event", null);
