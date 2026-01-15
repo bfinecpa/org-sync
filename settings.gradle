@@ -1,2 +1,2 @@
 rootProject.name = 'org-sync'
-include 'org-sync-core', 'org-sync-spring', 'org-sync-boot-starter', 'org-sync-boot-sample', 'org-sync-spring-sample'
+include 'org-sync-core', 'org-sync-spring', 'org-sync-boot-starter'
