@@ -10,9 +10,6 @@ public interface OrgSyncCompanyGroupService {
 
     default void create(CompanyGroupDto companyGroupDto) {}
 
-    default void update(CompanyGroupDto companyGroupDto) {}
-
     default void delete(Long companyGroupId) {}
 
-    default CompanyGroupDto findByCompanyId(Long id) {return null;}
 }

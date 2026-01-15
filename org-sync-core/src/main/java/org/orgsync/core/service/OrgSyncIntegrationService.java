@@ -9,8 +9,6 @@ public interface OrgSyncIntegrationService {
 
     default void create(IntegrationDto integrationDto) {}
 
-    default void update(IntegrationDto integrationDto) {}
-
     default void delete(Long id) {}
 
     default List<IntegrationDto> findByCompanyId(Long id) {return null;}
